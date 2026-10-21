@@ -18,7 +18,17 @@ let io = null;
  */
 export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
-    cors: { origin: env.clientUrls, methods: ['GET', 'POST'], credentials: true },
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || !env.isProd || env.clientUrls.includes(origin) || /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Origin not allowed by CORS'));
+        }
+      },
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
   });
 
   // Optional auth: guests may connect (menu_updated), staff/customers send a JWT.

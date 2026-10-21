@@ -21,22 +21,22 @@ import { ORDER_INCLUDE } from './order.controller.js';
 
 /** Lazy-load Razorpay only if the key is configured */
 let razorpayInstance = null;
-function getRazorpay() {
+async function getRazorpay() {
   if (!env.razorpayKeyId || !env.razorpayKeySecret) {
     throw new HttpError(503, 'Online payment is not configured on this server. Please pay on handover.');
   }
   if (!razorpayInstance) {
-    // Dynamic import so the server starts even without the razorpay package
+    let Razorpay;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const Razorpay = require('razorpay');
-      razorpayInstance = new Razorpay({
-        key_id: env.razorpayKeyId,
-        key_secret: env.razorpayKeySecret,
-      });
+      const mod = await import('razorpay');
+      Razorpay = mod.default || mod;
     } catch {
       throw new HttpError(503, 'Razorpay package is not installed. Run: npm install razorpay');
     }
+    razorpayInstance = new Razorpay({
+      key_id: env.razorpayKeyId,
+      key_secret: env.razorpayKeySecret,
+    });
   }
   return razorpayInstance;
 }
@@ -90,7 +90,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
   const totalAmount = subtotal + deliveryFee;
 
   // Create Razorpay order (amount in paise)
-  const rzp = getRazorpay();
+  const rzp = await getRazorpay();
   const rzpOrder = await new Promise((resolve, reject) => {
     rzp.orders.create(
       { amount: Math.round(totalAmount * 100), currency: 'INR', receipt: `cb_${Date.now()}` },

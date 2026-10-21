@@ -1,8 +1,14 @@
 import { useAuthStore } from '../store/useAuthStore';
 
-const BASE = `${import.meta.env.VITE_API_URL || ''}/api/v1`;
+const rawApiUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '').trim();
+const cleanApiUrl = rawApiUrl.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 
-export const SOCKET_URL = import.meta.env.VITE_API_URL || window.location.origin;
+const BASE = cleanApiUrl ? `${cleanApiUrl}/api/v1` : '/api/v1';
+
+const rawSocketUrl = (import.meta.env.VITE_SOCKET_URL || cleanApiUrl || '').trim();
+export const SOCKET_URL = rawSocketUrl
+  ? rawSocketUrl.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? window.location.origin : '');
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -11,7 +17,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, retries = 1) {
   const token = useAuthStore.getState().token;
   let res;
   try {
@@ -23,8 +29,13 @@ async function request(method, path, body) {
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-  } catch {
-    throw new ApiError('Cannot reach the server. Check your internet connection.', 0);
+  } catch (err) {
+    console.warn(`[API Network Error] ${method} ${BASE}${path}:`, err);
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return request(method, path, body, retries - 1);
+    }
+    throw new ApiError('Cannot reach the server. Please check your connection or verify the backend is running.', 0);
   }
 
   let json = null;
