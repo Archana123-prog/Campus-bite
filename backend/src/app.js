@@ -13,8 +13,32 @@ import { notFound, errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
 
-app.use(helmet());
-app.use(cors({ origin: env.clientUrls, credentials: true }));
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (env.clientUrls.includes(origin)) return true;
+  // Automatically allow any Vercel deployment (*.vercel.app)
+  if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) return true;
+  if (!env.isProd) {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    if (/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)\d+(\.\d+)?(:\d+)?$/.test(origin)) return true;
+  }
+  return false;
+};
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/', (_req, res) => res.json({ name: 'CampusBite API', status: 'ok' }));
