@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Capture beforeinstallprompt immediately, before React or bundles execute
+      window.__pwaInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        console.log('[PWA] Early beforeinstallprompt captured');
+        window.__pwaInstallPrompt = e;
+        if (typeof window.__onPwaInstallPrompt === 'function') {
+          window.__onPwaInstallPrompt(e);
+        }
+      });
+      window.addEventListener('appinstalled', function () {
+        console.log('[PWA] App installed');
+        window.__pwaInstallPrompt = null;
+        if (typeof window.__onPwaInstalled === 'function') {
+          window.__onPwaInstalled();
+        }
+      });
+      // Register service worker immediately
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(function (reg) {
+            console.log('[PWA] SW registered immediately:', reg.scope);
+          })
+          .catch(function (err) {
+            console.warn('[PWA] SW register error:', err);
+          });
+      }
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2A1608" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CampusBite" />
+    <meta name="application-name" content="CampusBite" />
+    <meta name="msapplication-TileColor" content="#2A1608" />
+    <meta name="msapplication-TileImage" content="/pwa-192x192.png" />
+    <meta name="description" content="CampusBite: order from your college canteen to your table or your hostel room." />
+    <title>CampusBite · College Canteen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Razorpay checkout SDK — loaded async so it doesn't block the page -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js" async defer></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  DELIVERY_RUNNER
+}
+
+enum OrderType {
+  DINE_IN
+  HOSTEL_DELIVERY
+  TAKEAWAY
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  SERVED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+}
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String   @map("full_name")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  phone        String
+  role         UserRole @default(CUSTOMER)
+  hostelBlock  String?  @map("hostel_block")
+  roomNumber   String?  @map("room_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  orders     Order[] @relation("CustomerOrders")
+  deliveries Order[] @relation("RunnerOrders")
+
+  @@map("users")
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  imageUrl  String?    @map("image_url")
+  isActive  Boolean    @default(true) @map("is_active")
+  menuItems MenuItem[]
+
+  @@map("categories")
+}
+
+model MenuItem {
+  id           String   @id @default(uuid())
+  categoryId   String   @map("category_id")
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  imageUrl     String?  @map("image_url")
+  isVeg        Boolean  @default(true) @map("is_veg")
+  isAvailable  Boolean  @default(true) @map("is_available")
+  isFeatured   Boolean  @default(false) @map("is_featured")
+  prepTimeMins Int      @default(15) @map("prep_time_mins")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+model Order {
+  id            String        @id @default(uuid())
+  orderNumber   Int           @unique @default(autoincrement()) @map("order_number")
+  userId        String?       @map("user_id")
+  runnerId      String?       @map("runner_id")
+  orderType     OrderType     @map("order_type")
+  tableNumber   String?       @map("table_number")
+  hostelBlock   String?       @map("hostel_block")
+  roomNumber    String?       @map("room_number")
+  subtotal      Decimal       @db.Decimal(10, 2)
+  deliveryFee   Decimal       @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user       User?       @relation("CustomerOrders", fields: [userId], references: [id], onDelete: SetNull)
+  runner     User?       @relation("RunnerOrders", fields: [runnerId], references: [id], onDelete: SetNull)
+  orderItems OrderItem[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([runnerId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String  @map("order_id")
+  menuItemId String  @map("menu_item_id")
+  quantity   Int
+  unitPrice  Decimal @map("unit_price") @db.Decimal(10, 2)
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@map("order_items")
+}
