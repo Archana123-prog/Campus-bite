@@ -52,7 +52,7 @@ export default function App() {
     <BrowserRouter>
       <QrParamsHandler />
       <Navbar />
-      <main className="min-h-[calc(100vh-4rem)] pb-20 md:pb-6">
+      <main className="min-h-[calc(100vh-4rem)] overflow-x-hidden pb-20 md:pb-6">
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<HomePage />} />

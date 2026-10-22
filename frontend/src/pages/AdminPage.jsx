@@ -17,29 +17,39 @@ const tabs = [
 
 export default function AdminPage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <nav className="mb-6 flex gap-1.5 overflow-x-auto scrollbar-none" aria-label="Admin sections">
-        {tabs.map(({ to, end, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `btn shrink-0 !rounded-full !px-4 !py-2 ${isActive ? 'bg-ink-900 text-white dark:bg-brand-500 dark:text-ink-950' : 'bg-white text-ink-600 ring-1 ring-ink-200 dark:bg-ink-900 dark:text-ink-300 dark:ring-ink-700'}`
-            }
-          >
-            <Icon size={15} /> {label}
-          </NavLink>
-        ))}
-      </nav>
-      <Routes>
-        <Route index element={<KitchenKDS />} />
-        <Route path="overview" element={<AdminDashboard />} />
-        <Route path="menu" element={<MenuManager />} />
-        <Route path="tables" element={<TableQRGenerator />} />
-        <Route path="team" element={<StaffManager />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
+    <div className="w-full overflow-hidden">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+        <nav
+          className="mb-4 flex gap-1.5 overflow-x-auto scrollbar-none pb-1"
+          aria-label="Admin sections"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {tabs.map(({ to, end, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `btn shrink-0 !rounded-full !px-4 !py-2 text-sm ${
+                  isActive
+                    ? 'bg-ink-900 text-white'
+                    : 'bg-white text-ink-600 ring-1 ring-ink-200'
+                }`
+              }
+            >
+              <Icon size={15} /> {label}
+            </NavLink>
+          ))}
+        </nav>
+        <Routes>
+          <Route index element={<KitchenKDS />} />
+          <Route path="overview" element={<AdminDashboard />} />
+          <Route path="menu" element={<MenuManager />} />
+          <Route path="tables" element={<TableQRGenerator />} />
+          <Route path="team" element={<StaffManager />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </div>
     </div>
   );
 }

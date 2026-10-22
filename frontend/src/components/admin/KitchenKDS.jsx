@@ -137,7 +137,7 @@ export default function KitchenKDS() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         {COLUMNS.map((col) => {
           const list = orders.filter((o) => o.status === col.id);
           return (
@@ -174,9 +174,9 @@ export default function KitchenKDS() {
                       </ul>
                       {o.notes && <p className="mt-2 rounded-lg bg-brand-50 px-2 py-1.5 text-xs text-brand-900 dark:bg-brand-500/10 dark:text-brand-200">“{o.notes}”</p>}
 
-                      <div className="mt-2 flex items-center justify-between text-xs text-ink-400">
+                        <div className="mt-2 flex items-center justify-between text-xs text-ink-400">
                         <span>{rupees(o.totalAmount)} · {o.paymentMethod}</span>
-                        {o.runner && <span>🚴 {o.runner.fullName}</span>}
+                        {o.runner && <span className="flex items-center gap-1"><Bike size={12} className="text-brand-600" /> {o.runner.fullName}</span>}
                       </div>
 
                       <div className="mt-3 flex gap-2">

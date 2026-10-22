@@ -2,8 +2,6 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   ShoppingBag,
-  Moon,
-  Sun,
   ChefHat,
   Bike,
   ReceiptText,
@@ -23,8 +21,8 @@ import ProfileDropdown from './ProfileDropdown';
 const linkCls = ({ isActive }) =>
   `flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
     isActive
-      ? 'bg-ink-900 text-white shadow-sm dark:bg-white dark:text-ink-900'
-      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-white'
+      ? 'bg-ink-900 text-white shadow-sm'
+      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
   }`;
 
 export default function Navbar() {
@@ -32,7 +30,6 @@ export default function Navbar() {
   const subtotal = useCartStore(selectSubtotal);
   const openCart = useCartStore((s) => s.openCart);
   const user = useAuthStore((s) => s.user);
-  const [dark, setDark] = React.useState(isDark());
   const isInstalled = usePwaStore((s) => s.isInstalled);
   const promptInstall = usePwaStore((s) => s.promptInstall);
 
@@ -68,7 +65,7 @@ export default function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md dark:border-ink-800 dark:bg-ink-950/90 shadow-xs">
+    <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md shadow-xs">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         {/* Brand / Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" aria-label="CampusBite home">
@@ -108,14 +105,6 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* Theme Toggle */}
-          <button
-            onClick={() => setDark(toggleTheme())}
-            className="rounded-xl p-2 text-ink-500 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800 transition"
-            aria-label="Toggle dark mode"
-          >
-            {dark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
-          </button>
 
           {/* CARD / CART ORDER SECTION: Prominent customer order button */}
           <button
@@ -123,14 +112,14 @@ export default function Navbar() {
             className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 font-bold transition active:scale-95 shadow-sm ${
               count > 0
                 ? 'bg-brand-500 text-ink-950 hover:bg-brand-400 ring-2 ring-brand-500/30'
-                : 'bg-ink-900 text-white hover:bg-ink-700 dark:bg-white dark:text-ink-900 dark:hover:bg-ink-100'
+                : 'bg-ink-900 text-white hover:bg-ink-700'
             }`}
             aria-label={`Open cart, ${count} items. Order now`}
           >
             <div className="relative">
               <ShoppingBag size={18} />
               {count > 0 && (
-                <span className="absolute -right-2.5 -top-2.5 grid h-4 min-w-4 place-items-center rounded-full bg-ink-950 px-1 text-[10px] font-black text-white dark:bg-ink-900">
+                <span className="absolute -right-2.5 -top-2.5 grid h-4 min-w-4 place-items-center rounded-full bg-ink-950 px-1 text-[10px] font-black text-white">
                   {count}
                 </span>
               )}

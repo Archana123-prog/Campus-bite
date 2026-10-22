@@ -7,9 +7,17 @@ import { initSocket } from './services/socket.service.js';
 const httpServer = createServer(app);
 initSocket(httpServer);
 
-httpServer.listen(env.port, () => {
+httpServer.listen(env.port, async () => {
   console.log(`🚀 CampusBite API running on http://localhost:${env.port}`);
   console.log(`   CORS origin(s): ${env.clientUrls.join(', ')}`);
+
+  // ── DB connection check ──────────────────────────────────────────────
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('✅ Database connected successfully');
+  } catch (err) {
+    console.error('❌ Database connection FAILED:', err.message);
+  }
 });
 
 const shutdown = async () => {
@@ -20,3 +28,4 @@ const shutdown = async () => {
 };
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+

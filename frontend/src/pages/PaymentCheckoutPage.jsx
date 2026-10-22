@@ -5,16 +5,12 @@ import {
   Armchair,
   ShoppingBag,
   CreditCard,
-  Banknote,
-  Smartphone,
   Plus,
   Minus,
   Trash2,
   ArrowLeft,
   ShieldCheck,
   CheckCircle2,
-  Clock,
-  Sparkles,
   QrCode
 } from 'lucide-react';
 import { useCartStore, selectSubtotal, selectCount, deliveryFeeFor } from '../store/useCartStore';
@@ -398,12 +394,6 @@ export default function PaymentCheckoutPage() {
                   icon: QrCode,
                   badge: 'Recommended',
                 },
-                {
-                  id: 'CASH',
-                  label: 'Cash on Handover',
-                  hint: 'Pay currency directly when served',
-                  icon: Banknote,
-                },
                 ...(razorpayKeyId
                   ? [{ id: 'RAZORPAY', label: 'Cards / Netbanking (Razorpay)', hint: 'Credit/Debit Cards, Netbanking', icon: CreditCard }]
                   : []),
@@ -414,12 +404,12 @@ export default function PaymentCheckoutPage() {
                   onClick={() => setPaymentMethod(id)}
                   className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition ${
                     paymentMethod === id
-                      ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-500/10'
-                      : 'border-ink-100 hover:border-ink-200 dark:border-ink-800'
+                      ? 'border-brand-500 bg-brand-50/60'
+                      : 'border-ink-100 hover:border-ink-200'
                   }`}
                 >
                   <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                    paymentMethod === id ? 'bg-brand-500 text-ink-950 font-bold' : 'bg-ink-100 dark:bg-ink-800 text-ink-600'
+                    paymentMethod === id ? 'bg-brand-500 text-ink-950 font-bold' : 'bg-ink-100 text-ink-600'
                   }`}>
                     <Icon size={20} />
                   </span>
@@ -427,7 +417,7 @@ export default function PaymentCheckoutPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold leading-tight">{label}</p>
                       {badge && (
-                        <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-extrabold text-brand-700 dark:text-brand-300">
+                        <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-extrabold text-brand-700">
                           {badge}
                         </span>
                       )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Trash2, Bike, Armchair, ShoppingBag, ShoppingCart, Banknote, Smartphone, CreditCard, QrCode } from 'lucide-react';
+import { X, Plus, Minus, Trash2, Bike, Armchair, ShoppingBag, ShoppingCart, CreditCard, QrCode } from 'lucide-react';
 import { useCartStore, selectSubtotal, selectCount } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useConfigStore } from '../../store/useConfigStore';
@@ -155,13 +155,13 @@ export default function CartDrawer() {
         aria-modal="true"
         aria-label="Your cart"
         onMouseDown={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-md animate-slideIn flex-col bg-white shadow-2xl dark:bg-ink-900"
+        className="flex h-full w-full max-w-md animate-slideIn flex-col bg-white shadow-2xl"
       >
-        <header className="flex items-center justify-between border-b border-ink-100 px-5 py-4 dark:border-ink-800">
+        <header className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
           <h2 className="flex items-center gap-2 font-display text-xl font-bold">
             <ShoppingBag size={20} className="text-brand-600" /> Your cart {count > 0 && <span className="text-ink-400">({count})</span>}
           </h2>
-          <button onClick={s.closeCart} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800" aria-label="Close cart">
+          <button onClick={s.closeCart} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100" aria-label="Close cart">
             <X size={20} />
           </button>
         </header>
@@ -177,7 +177,7 @@ export default function CartDrawer() {
             <>
               <ul className="space-y-2.5">
                 {s.cart.map((item) => (
-                  <li key={item.menuItemId} className="flex items-center gap-3 rounded-xl bg-ink-50 p-2.5 dark:bg-ink-800">
+                  <li key={item.menuItemId} className="flex items-center gap-3 rounded-xl bg-ink-50 p-2.5">
                     <FoodImage src={item.imageUrl} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{item.name}</p>
@@ -250,10 +250,9 @@ export default function CartDrawer() {
                   <p className="label">Payment</p>
                   <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400">Scanner Ready</span>
                 </div>
-                <div className={`grid gap-2 ${razorpayKeyId ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                <div className={`grid gap-2 ${razorpayKeyId ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   {[
-                    { id: 'UPI', label: 'Online UPI', hint: 'Scan Canteen QR', icon: QrCode },
-                    { id: 'CASH', label: 'Cash', hint: 'Pay on handover', icon: Banknote },
+                    { id: 'UPI',      label: 'Online UPI', hint: 'Scan Canteen QR',   icon: QrCode    },
                     ...(razorpayKeyId ? [{ id: 'RAZORPAY', label: 'Razorpay', hint: 'Card / UPI now', icon: CreditCard }] : []),
                   ].map(({ id, label, hint, icon: Icon }) => (
                     <button
@@ -262,10 +261,10 @@ export default function CartDrawer() {
                       onClick={() => s.setPaymentMethod(id)}
                       aria-pressed={s.paymentMethod === id}
                       className={`flex items-center gap-2 rounded-xl border-2 p-2.5 text-left transition ${
-                        s.paymentMethod === id ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10' : 'border-ink-100 dark:border-ink-700'
+                        s.paymentMethod === id ? 'border-brand-500 bg-brand-50' : 'border-ink-100'
                       }`}
                     >
-                      <Icon size={18} className="text-brand-700 dark:text-brand-400 shrink-0" />
+                      <Icon size={18} className="text-brand-700 shrink-0" />
                       <span>
                         <span className="block text-sm font-bold">{label}</span>
                         <span className="block text-[11px] text-ink-400">{hint}</span>

@@ -8,8 +8,6 @@ import {
   Home,
   ChefHat,
   Bike,
-  Sun,
-  Moon,
   ChevronDown,
   ShieldCheck,
   Download
@@ -17,7 +15,6 @@ import {
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore, selectCount } from '../../store/useCartStore';
 import { usePwaStore } from '../../store/usePwaStore';
-import { toggleTheme, isDark } from '../../utils/theme';
 import { toast } from '../../store/useToastStore';
 
 export default function ProfileDropdown() {
@@ -31,7 +28,6 @@ export default function ProfileDropdown() {
   const openCart = useCartStore((s) => s.openCart);
   const isInstalled = usePwaStore((s) => s.isInstalled);
   const promptInstall = usePwaStore((s) => s.promptInstall);
-  const [dark, setDark] = useState(isDark());
 
   // Close dropdown on outside click or Escape
   useEffect(() => {
@@ -92,8 +88,8 @@ export default function ProfileDropdown() {
         aria-haspopup="true"
         className={`flex items-center gap-2 rounded-xl p-1.5 sm:px-2.5 sm:py-1.5 transition ${
           isOpen
-            ? 'bg-ink-100 ring-2 ring-brand-500/30 dark:bg-ink-800'
-            : 'hover:bg-ink-100 dark:hover:bg-ink-800'
+            ? 'bg-ink-100 ring-2 ring-brand-500/30'
+            : 'hover:bg-ink-100'
         }`}
         title="Customer Profile & Settings"
       >
@@ -113,9 +109,9 @@ export default function ProfileDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-ink-100 bg-white p-2 shadow-2xl animate-pop dark:border-ink-800 dark:bg-ink-900 z-50">
+        <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-ink-100 bg-white p-2 shadow-2xl animate-pop z-50">
           {/* User card info */}
-          <div className="rounded-xl bg-ink-50 p-3 dark:bg-ink-800/80">
+          <div className="rounded-xl bg-ink-50 p-3">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-tr from-brand-600 to-amber-400 text-sm font-extrabold text-ink-950 shadow-sm">
                 {initial}
@@ -215,16 +211,6 @@ export default function ProfileDropdown() {
 
           {/* Quick Preferences */}
           <div className="mt-1 space-y-0.5 pt-1">
-            <button
-              onClick={() => setDark(toggleTheme())}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-ink-600 transition hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
-            >
-              <span className="flex items-center gap-2.5">
-                {dark ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-ink-400" />}
-                <span>{dark ? 'Light Appearance' : 'Dark Appearance'}</span>
-              </span>
-            </button>
-
             {!isInstalled && (
               <button
                 onClick={() => {
