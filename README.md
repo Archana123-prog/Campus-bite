@@ -92,3 +92,6 @@ Socket.io events: `kds_new_order`, `order_updated`, `menu_updated`. Clients join
 - Dish photos in the seed are Unsplash links; any that fail show an emoji placeholder. Admins can paste their own image URL per dish.
 - Socket.io rooms live in memory, so run **one** backend instance (fine for a single canteen).
 - Changing the Prisma schema later: `npm run db:push` (quick) or `npm run db:migrate` (tracked migrations).
+
+//implemented
+ Keep ordering disabled till 9pm

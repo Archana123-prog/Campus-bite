@@ -36,3 +36,4 @@ export const authorize = (...roles) => (req, _res, next) => {
   }
   next();
 };
+
