@@ -1,33 +1,46 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, X, Plus, Minus, Clock, Flame, AlertCircle, Leaf } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, X, Plus, Minus, Clock, Flame, AlertCircle, Leaf, Zap, ShoppingBag } from 'lucide-react';
 import { api } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useCartStore } from '../store/useCartStore';
+import { toast } from '../store/useToastStore';
 import FoodImage from '../components/ui/FoodImage';
 import VegMark from '../components/ui/VegMark';
 import { rupees } from '../utils/format';
 
+let cachedCategories = null;
+let cachedMenuItems = null;
+
 export default function MenuPage() {
-  const [categories, setCategories] = useState([]);
-  const [items, setItems] = useState([]);
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState(() => cachedCategories || []);
+  const [items, setItems] = useState(() => cachedMenuItems || []);
   const [categoryId, setCategoryId] = useState('ALL');
   const [query, setQuery] = useState('');
   const [vegOnly, setVegOnly] = useState(false);
-  const [state, setState] = useState('loading'); // loading | ready | error
+  const [state, setState] = useState(() => (cachedMenuItems && cachedMenuItems.length > 0 ? 'ready' : 'loading'));
 
   const cart = useCartStore((s) => s.cart);
   const addItem = useCartStore((s) => s.addItem);
+  const buyNow = useCartStore((s) => s.buyNow);
   const setQuantity = useCartStore((s) => s.setQuantity);
 
   const load = () => {
-    setState((s) => (s === 'ready' ? s : 'loading'));
+    if (!cachedMenuItems) setState('loading');
     Promise.all([api.get('/menu/categories'), api.get('/menu')])
       .then(([c, m]) => {
-        setCategories(c.data.filter((cat) => cat._count.menuItems > 0));
-        setItems(m.data);
+        const cats = (c.data || []).filter((cat) => cat._count?.menuItems > 0);
+        const its = m.data || [];
+        cachedCategories = cats;
+        cachedMenuItems = its;
+        setCategories(cats);
+        setItems(its);
         setState('ready');
       })
-      .catch(() => setState('error'));
+      .catch(() => {
+        if (!cachedMenuItems) setState('error');
+      });
   };
 
   useEffect(load, []);
@@ -53,12 +66,31 @@ export default function MenuPage() {
 
   const qtyOf = (id) => cart.find((c) => c.menuItemId === id)?.quantity || 0;
 
+  const handleCardClick = (itemId) => {
+    navigate(`/product/${itemId}`);
+  };
+
+  const handleAddToCart = (e, item) => {
+    e.stopPropagation();
+    addItem(item, 1);
+    toast.success(`${item.name} added to cart!`);
+  };
+
+  const handleBuyNow = (e, item) => {
+    e.stopPropagation();
+    buyNow(item, 1);
+    toast.success(`Proceeding to checkout with ${item.name}!`);
+    navigate('/checkout');
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight">Canteen menu</h1>
-          <p className="mt-1 text-sm text-ink-500 dark:text-ink-300">Sold-out dishes update live.</p>
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-300">
+            Click any dish to see order details, customizations, and ingredients.
+          </p>
         </div>
         <div className="flex gap-2">
           <div className="relative flex-1 md:w-72">
@@ -140,48 +172,106 @@ export default function MenuPage() {
           {filtered.map((item) => {
             const qty = qtyOf(item.id);
             return (
-              <article key={item.id} className={`card flex flex-col overflow-hidden transition hover:shadow-lg ${!item.isAvailable ? 'opacity-70' : ''}`}>
-                <div className="relative h-40">
-                  <FoodImage src={item.imageUrl} alt={item.name} className={`h-full w-full ${!item.isAvailable ? 'grayscale' : ''}`} />
+              <article
+                key={item.id}
+                onClick={() => handleCardClick(item.id)}
+                className={`card group flex flex-col overflow-hidden transition duration-200 hover:-translate-y-1 hover:border-brand-500 hover:shadow-xl cursor-pointer ${
+                  !item.isAvailable ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {/* Product Image */}
+                <div className="relative h-44 overflow-hidden">
+                  <FoodImage
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
+                      !item.isAvailable ? 'grayscale' : ''
+                    }`}
+                  />
                   {item.isFeatured && item.isAvailable && (
-                    <span className="chip absolute left-2.5 top-2.5 bg-brand-500 text-ink-950"><Flame size={11} /> Special</span>
-                  )}
-                  {!item.isAvailable && (
-                    <span className="absolute inset-0 grid place-items-center bg-ink-950/55">
-                      <span className="chip bg-chili-500 px-3 py-1.5 text-xs text-white">Sold out</span>
+                    <span className="chip absolute left-2.5 top-2.5 bg-brand-500 text-ink-950 font-bold shadow-md">
+                      <Flame size={11} /> Special
                     </span>
                   )}
+                  {!item.isAvailable && (
+                    <span className="absolute inset-0 grid place-items-center bg-ink-950/60 backdrop-blur-xs">
+                      <span className="chip bg-chili-500 px-3 py-1.5 text-xs text-white font-extrabold">
+                        Sold out
+                      </span>
+                    </span>
+                  )}
+                  <span className="absolute bottom-2.5 right-2.5 rounded-full bg-ink-950/80 px-2.5 py-0.5 text-xs font-black text-white backdrop-blur">
+                    {rupees(item.price)}
+                  </span>
                 </div>
 
-                <div className="flex flex-1 flex-col p-3.5">
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5"><VegMark isVeg={item.isVeg} /></span>
-                    <h3 className="font-display text-base font-bold leading-snug">{item.name}</h3>
-                  </div>
-                  <p className="mt-1 line-clamp-2 min-h-10 text-xs text-ink-500 dark:text-ink-300">{item.description}</p>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-extrabold">{rupees(item.price)}</p>
-                      <p className="flex items-center gap-1 text-[11px] text-ink-400"><Clock size={11} /> ~{item.prepTimeMins} min</p>
+                {/* Content */}
+                <div className="flex flex-1 flex-col p-4 justify-between">
+                  <div>
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5"><VegMark isVeg={item.isVeg} /></span>
+                      <h3 className="font-display text-base font-black leading-snug line-clamp-1 group-hover:text-brand-600 transition">
+                        {item.name}
+                      </h3>
                     </div>
+                    <p className="mt-1 line-clamp-2 min-h-10 text-xs text-ink-500 dark:text-ink-300 leading-relaxed">
+                      {item.description}
+                    </p>
 
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-ink-400 font-semibold">
+                      <span>{item.category?.name}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={11} /> ~{item.prepTimeMins || 10} min
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* MANDATORY ACTION BUTTONS: Add to Cart and Buy Now */}
+                  <div className="mt-4 pt-3 border-t border-ink-100 dark:border-ink-800">
                     {!item.isAvailable ? (
-                      <span className="text-xs font-semibold text-ink-400">Unavailable</span>
-                    ) : qty > 0 ? (
-                      <div className="flex items-center gap-1 rounded-xl bg-brand-500 p-1 text-ink-950">
-                        <button onClick={() => setQuantity(item.id, qty - 1)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-brand-400" aria-label={`Remove one ${item.name}`}>
-                          <Minus size={15} />
-                        </button>
-                        <span className="w-6 text-center text-sm font-extrabold">{qty}</span>
-                        <button onClick={() => addItem(item, 1)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-brand-400" aria-label={`Add one more ${item.name}`}>
-                          <Plus size={15} />
+                      <span className="block text-center text-xs font-bold text-ink-400 py-1.5">
+                        Sold Out
+                      </span>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
+                        {/* Add to Cart button / quantity stepper */}
+                        {qty > 0 ? (
+                          <div className="flex items-center justify-between rounded-xl bg-brand-500 p-1 text-ink-950">
+                            <button
+                              onClick={() => setQuantity(item.id, qty - 1)}
+                              className="grid h-7 w-7 place-items-center rounded-lg hover:bg-brand-400 font-bold"
+                              aria-label={`Remove one ${item.name}`}
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <span className="font-black text-xs">{qty}</span>
+                            <button
+                              onClick={() => addItem(item, 1)}
+                              className="grid h-7 w-7 place-items-center rounded-lg hover:bg-brand-400 font-bold"
+                              aria-label={`Add one more ${item.name}`}
+                            >
+                              <Plus size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => handleAddToCart(e, item)}
+                            className="btn-dark !py-2 !px-2 text-xs font-bold w-full"
+                            title="Add to cart"
+                          >
+                            <ShoppingBag size={13} /> Add
+                          </button>
+                        )}
+
+                        {/* Buy Now button */}
+                        <button
+                          onClick={(e) => handleBuyNow(e, item)}
+                          className="btn-primary !py-2 !px-2 text-xs font-black w-full shadow-sm"
+                          title="Instant buy and checkout"
+                        >
+                          <Zap size={13} className="fill-ink-950" /> Buy Now
                         </button>
                       </div>
-                    ) : (
-                      <button onClick={() => addItem(item, 1)} className="btn-dark !px-4 !py-2">
-                        <Plus size={15} /> Add
-                      </button>
                     )}
                   </div>
                 </div>

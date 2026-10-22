@@ -55,6 +55,49 @@ export const useCartStore = create(
         }
       },
 
+      buyNow: (item, quantity = 1) => {
+        const cart = get().cart;
+        const found = cart.find((i) => i.menuItemId === item.id);
+        let newCart;
+        if (found) {
+          newCart = cart.map((i) =>
+            i.menuItemId === item.id ? { ...i, quantity: Math.max(i.quantity, quantity) } : i
+          );
+        } else {
+          newCart = [
+            ...cart,
+            {
+              menuItemId: item.id,
+              name: item.name,
+              price: Number(item.price),
+              imageUrl: item.imageUrl,
+              quantity,
+            },
+          ];
+        }
+        set({ cart: newCart, error: null });
+      },
+
+      reorder: (order) => {
+        const cartItems = (order.orderItems || []).map((i) => ({
+          menuItemId: i.menuItemId || i.menuItem?.id,
+          name: i.menuItem?.name || 'Dish',
+          price: Number(i.unitPrice || i.price || i.menuItem?.price || 0),
+          imageUrl: i.menuItem?.imageUrl,
+          quantity: i.quantity || 1,
+        }));
+        set({
+          cart: cartItems,
+          orderType: order.orderType || 'HOSTEL_DELIVERY',
+          hostelBlock: order.hostelBlock || '',
+          roomNumber: order.roomNumber || '',
+          tableNumber: order.tableNumber || '',
+          paymentMethod: order.paymentMethod || 'CASH',
+          notes: order.notes || '',
+          error: null,
+        });
+      },
+
       setQuantity: (menuItemId, quantity) => {
         if (quantity <= 0) return get().removeItem(menuItemId);
         set({

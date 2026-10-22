@@ -8,7 +8,21 @@ export function registerPwa() {
     usePwaStore.getState().setDeferredPrompt(window.__pwaInstallPrompt);
   }
 
-  // Register service worker if not already registered
+  const isDev = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.port === '5173' || window.location.port === '5174';
+
+  // In local development, unregister any existing service worker to prevent cache traps and page freezes
+  if (isDev && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const reg of registrations) {
+        reg.unregister().then(() => {
+          console.log('[PWA] Unregistered stale service worker in dev:', reg.scope);
+        });
+      }
+    }).catch(() => {});
+    return;
+  }
+
+  // Register service worker in production
   if ('serviceWorker' in navigator) {
     const doRegister = () => {
       navigator.serviceWorker

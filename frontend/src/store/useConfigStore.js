@@ -6,6 +6,9 @@ export const useConfigStore = create((set) => ({
   deliveryFee: 10,
   tableCount: 20,
   hostelBlocks: ['Boys Hostel Block A', 'Boys Hostel Block B', 'Girls Hostel Block A', 'Girls Hostel Block B'],
+  upiId: '7488325002@upi',
+  upiName: 'Archana Kumari',
+  upiQrImage: '/canteen-scanner.jpg',
   // Razorpay public key — populated from backend /config so it doesn't need to be in the frontend .env
   razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID || null,
   loaded: false,

@@ -55,17 +55,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation requests: Network-first, fallback to cached index.html
+  // Navigation requests: Network-first, fallback to cached index.html or minimal offline page
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html') || caches.match('/'))
+      fetch(request).catch(async () => {
+        const cached = (await caches.match('/index.html')) || (await caches.match('/'));
+        if (cached) return cached;
+        return new Response(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>CampusBite</title></head><body style="font-family:sans-serif;text-align:center;padding:50px;"><h2>CampusBite is reconnecting</h2><p>Please check your connection and reload.</p><button onclick="location.reload()" style="padding:10px 20px;border-radius:8px;background:#ea580c;color:white;border:none;cursor:pointer;">Reload</button></body></html>',
+          { headers: { 'Content-Type': 'text/html' } }
+        );
+      })
     );
     return;
   }
 
-  // Static assets: Stale-While-Revalidate
+  // Static assets: Stale-While-Revalidate with safe fallback
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
+    caches.match(request).then(async (cachedResponse) => {
       const fetchPromise = fetch(request)
         .then((networkResponse) => {
           if (
@@ -80,9 +87,11 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cachedResponse);
+        .catch(() => null);
 
-      return cachedResponse || fetchPromise;
+      if (cachedResponse) return cachedResponse;
+      const res = await fetchPromise;
+      return res || new Response('', { status: 404 });
     })
   );
 });

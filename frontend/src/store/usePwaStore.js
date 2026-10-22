@@ -35,12 +35,16 @@ export const usePwaStore = create((set, get) => {
     };
 
     // Also check installed related apps if available
-    if (navigator.getInstalledRelatedApps) {
-      navigator.getInstalledRelatedApps().then((apps) => {
-        if (apps && apps.length > 0) {
-          set({ isInstalled: true, isInstallable: false });
-        }
-      }).catch(() => {});
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.getInstalledRelatedApps === 'function') {
+        navigator.getInstalledRelatedApps().then((apps) => {
+          if (apps && apps.length > 0) {
+            set({ isInstalled: true, isInstallable: false });
+          }
+        }).catch(() => {});
+      }
+    } catch {
+      // Ignored if browser sandbox restricts API
     }
   }
 

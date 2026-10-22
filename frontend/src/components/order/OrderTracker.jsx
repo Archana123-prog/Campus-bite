@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, MapPin, Armchair, ShoppingBag, Clock, XCircle, Phone } from 'lucide-react';
+import { Check, MapPin, Armchair, ShoppingBag, Clock, XCircle, Phone, QrCode } from 'lucide-react';
 import { api } from '../../services/api';
 import { getSocket, onConnected } from '../../services/socket';
 import { TIMELINE, STEP_LABEL, ORDER_TYPES } from '../../utils/constants';
 import { rupees, timeOf, estimateReadyAt } from '../../utils/format';
 import { toast } from '../../store/useToastStore';
 import Spinner from '../ui/Spinner';
+import UpiScannerModal from '../payment/UpiScannerModal';
 
 export default function OrderTracker({ orderId }) {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -143,6 +145,29 @@ export default function OrderTracker({ orderId }) {
           {order.notes && <p className="mt-2 text-xs text-ink-500">Note: “{order.notes}”</p>}
         </div>
 
+        {order.paymentMethod === 'UPI' && order.paymentStatus !== 'COMPLETED' && !cancelled && (
+          <div className="mt-4 rounded-2xl border border-brand-500/30 bg-brand-500/10 p-3.5 text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-500 text-ink-950 font-bold shadow-xs">
+                  <QrCode size={18} />
+                </span>
+                <div>
+                  <p className="font-extrabold text-ink-900 dark:text-white">Pay with Canteen UPI Scanner</p>
+                  <p className="text-[11px] text-ink-500 dark:text-ink-400">Archana Kumari • 7488325002@upi</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="rounded-xl bg-brand-500 px-3 py-1.5 font-black text-ink-950 text-xs shadow-sm hover:bg-brand-400 transition"
+              >
+                Scan & Pay
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 flex gap-2">
           {order.status === 'PENDING' && (
             <button onClick={cancel} disabled={cancelling} className="btn-ghost flex-1 !text-chili-600">Cancel order</button>
@@ -151,6 +176,15 @@ export default function OrderTracker({ orderId }) {
           {(done || cancelled) && <Link to="/menu" className="btn-primary flex-1">Order again</Link>}
         </div>
       </div>
+
+      {showScanner && (
+        <UpiScannerModal
+          isOpen={showScanner}
+          onClose={() => setShowScanner(false)}
+          amount={order.totalAmount}
+          showUtrInput={false}
+        />
+      )}
     </div>
   );
 }

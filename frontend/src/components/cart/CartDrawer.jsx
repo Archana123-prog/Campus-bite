@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Trash2, Bike, Armchair, ShoppingBag, ShoppingCart, Banknote, Smartphone, CreditCard } from 'lucide-react';
+import { X, Plus, Minus, Trash2, Bike, Armchair, ShoppingBag, ShoppingCart, Banknote, Smartphone, CreditCard, QrCode } from 'lucide-react';
 import { useCartStore, selectSubtotal, selectCount } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useConfigStore } from '../../store/useConfigStore';
 import FoodImage from '../ui/FoodImage';
+import UpiScannerModal from '../payment/UpiScannerModal';
 import { toast } from '../../store/useToastStore';
 import { rupees } from '../../utils/format';
 import { api } from '../../services/api';
@@ -22,6 +23,7 @@ export default function CartDrawer() {
   const count = useCartStore(selectCount);
   const user = useAuthStore((st) => st.user);
   const { hostelBlocks, deliveryFee, razorpayKeyId } = useConfigStore();
+  const [showScannerModal, setShowScannerModal] = useState(false);
 
   const fee = s.orderType === 'HOSTEL_DELIVERY' ? deliveryFee : 0;
   const total = subtotal + fee;
@@ -244,22 +246,26 @@ export default function CartDrawer() {
               </section>
 
               <section>
-                <p className="label">Payment</p>
+                <div className="flex items-center justify-between">
+                  <p className="label">Payment</p>
+                  <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400">Scanner Ready</span>
+                </div>
                 <div className={`grid gap-2 ${razorpayKeyId ? 'grid-cols-3' : 'grid-cols-2'}`}>
                   {[
+                    { id: 'UPI', label: 'Online UPI', hint: 'Scan Canteen QR', icon: QrCode },
                     { id: 'CASH', label: 'Cash', hint: 'Pay on handover', icon: Banknote },
-                    { id: 'UPI', label: 'UPI', hint: 'Pay on handover', icon: Smartphone },
-                    ...(razorpayKeyId ? [{ id: 'RAZORPAY', label: 'Online', hint: 'Card / UPI now', icon: CreditCard }] : []),
+                    ...(razorpayKeyId ? [{ id: 'RAZORPAY', label: 'Razorpay', hint: 'Card / UPI now', icon: CreditCard }] : []),
                   ].map(({ id, label, hint, icon: Icon }) => (
                     <button
                       key={id}
+                      type="button"
                       onClick={() => s.setPaymentMethod(id)}
                       aria-pressed={s.paymentMethod === id}
                       className={`flex items-center gap-2 rounded-xl border-2 p-2.5 text-left transition ${
                         s.paymentMethod === id ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10' : 'border-ink-100 dark:border-ink-700'
                       }`}
                     >
-                      <Icon size={18} className="text-brand-700 dark:text-brand-400" />
+                      <Icon size={18} className="text-brand-700 dark:text-brand-400 shrink-0" />
                       <span>
                         <span className="block text-sm font-bold">{label}</span>
                         <span className="block text-[11px] text-ink-400">{hint}</span>
@@ -267,6 +273,25 @@ export default function CartDrawer() {
                     </button>
                   ))}
                 </div>
+
+                {s.paymentMethod === 'UPI' && (
+                  <div className="mt-2.5 flex items-center justify-between rounded-xl bg-brand-500/10 p-2.5 text-xs font-semibold text-brand-900 dark:text-brand-200 border border-brand-500/20">
+                    <div className="flex items-center gap-2">
+                      <img src="/canteen-scanner.jpg" alt="UPI QR" className="h-8 w-8 rounded-lg object-contain bg-white p-0.5 border border-brand-500/30" />
+                      <div>
+                        <p className="font-bold leading-tight">Archana Kumari (7488325002@upi)</p>
+                        <p className="text-[10px] text-ink-500 dark:text-ink-400">Scan & pay with GPay/PhonePe</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowScannerModal(true)}
+                      className="rounded-lg bg-brand-500 px-2.5 py-1 text-[11px] font-bold text-ink-950 shadow-xs hover:bg-brand-400 transition"
+                    >
+                      View QR
+                    </button>
+                  </div>
+                )}
               </section>
 
               <section>
@@ -285,12 +310,30 @@ export default function CartDrawer() {
               {fee > 0 && <div className="flex justify-between text-ink-500 dark:text-ink-300"><dt>Delivery</dt><dd>{rupees(fee)}</dd></div>}
               <div className="flex justify-between pt-1 text-lg font-extrabold"><dt>Total</dt><dd>{rupees(total)}</dd></div>
             </dl>
-            <button onClick={checkout} disabled={s.isPlacing} className="btn-primary mt-3 w-full !py-3.5 text-base">
+            <button onClick={checkout} disabled={s.isPlacing} className="btn-primary mt-3 w-full !py-3.5 text-base font-extrabold shadow-md">
               {s.isPlacing ? 'Placing order…' : user ? `Place order · ${rupees(total)}` : 'Log in to order'}
+            </button>
+            <button
+              onClick={() => {
+                s.closeCart();
+                navigate('/checkout');
+              }}
+              className="btn-ghost mt-2 w-full !py-2 text-xs font-bold"
+            >
+              Open Full Payment Page →
             </button>
           </footer>
         )}
       </aside>
+
+      {showScannerModal && (
+        <UpiScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          amount={total}
+          showUtrInput={false}
+        />
+      )}
     </div>
   );
 }

@@ -1,111 +1,159 @@
 import React from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingBag, LogOut, User, Moon, Sun, ChefHat, Bike, ReceiptText, UtensilsCrossed, Download } from 'lucide-react';
-import { useCartStore, selectCount } from '../../store/useCartStore';
+import { Link, NavLink } from 'react-router-dom';
+import {
+  ShoppingBag,
+  Moon,
+  Sun,
+  ChefHat,
+  Bike,
+  ReceiptText,
+  UtensilsCrossed,
+  Home,
+  User,
+  Download,
+  Sparkles
+} from 'lucide-react';
+import { useCartStore, selectCount, selectSubtotal } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePwaStore } from '../../store/usePwaStore';
 import { toggleTheme, isDark } from '../../utils/theme';
+import { rupees } from '../../utils/format';
+import ProfileDropdown from './ProfileDropdown';
 
 const linkCls = ({ isActive }) =>
-  `flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-    isActive ? 'bg-ink-900 text-white dark:bg-white dark:text-ink-900' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'
+  `flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
+    isActive
+      ? 'bg-ink-900 text-white shadow-sm dark:bg-white dark:text-ink-900'
+      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-white'
   }`;
 
 export default function Navbar() {
-  const navigate = useNavigate();
   const count = useCartStore(selectCount);
+  const subtotal = useCartStore(selectSubtotal);
   const openCart = useCartStore((s) => s.openCart);
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const [dark, setDark] = React.useState(isDark());
   const isInstalled = usePwaStore((s) => s.isInstalled);
   const promptInstall = usePwaStore((s) => s.promptInstall);
 
-  const links = (
+  const customerLinks = (
     <>
-      <NavLink to="/menu" className={linkCls}><UtensilsCrossed size={16} /> Menu</NavLink>
-      {user && <NavLink to="/orders" className={linkCls}><ReceiptText size={16} /> My orders</NavLink>}
-      {user?.role === 'ADMIN' && <NavLink to="/admin" className={linkCls}><ChefHat size={16} /> Kitchen</NavLink>}
+      <NavLink to="/" className={linkCls}>
+        <Home size={16} /> Home
+      </NavLink>
+      <NavLink to="/menu" className={linkCls}>
+        <UtensilsCrossed size={16} /> Menu
+      </NavLink>
+      {user && (
+        <NavLink to="/orders" className={linkCls}>
+          <ReceiptText size={16} /> My Orders
+        </NavLink>
+      )}
+      {user && (
+        <NavLink to="/profile" className={linkCls}>
+          <User size={16} /> Profile
+        </NavLink>
+      )}
+      {user?.role === 'ADMIN' && (
+        <NavLink to="/admin" className={linkCls}>
+          <ChefHat size={16} /> Kitchen
+        </NavLink>
+      )}
       {(user?.role === 'DELIVERY_RUNNER' || user?.role === 'ADMIN') && (
-        <NavLink to="/delivery" className={linkCls}><Bike size={16} /> Deliveries</NavLink>
+        <NavLink to="/delivery" className={linkCls}>
+          <Bike size={16} /> Deliveries
+        </NavLink>
       )}
     </>
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-100 bg-ink-50/85 backdrop-blur-md dark:border-ink-800 dark:bg-ink-950/85">
+    <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md dark:border-ink-800 dark:bg-ink-950/90 shadow-xs">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-        <Link to="/" className="flex items-center gap-2.5" aria-label="CampusBite home">
-          <img
-            src="/pwa-192x192.png"
-            alt="CampusBite icon"
-            className="h-9 w-9 rounded-xl shadow-sm ring-1 ring-brand-500/20 object-cover"
-          />
-          <span className="font-display text-xl font-extrabold tracking-tight">
-            Campus<span className="text-brand-600 dark:text-brand-400">Bite</span>
-          </span>
+        {/* Brand / Logo */}
+        <Link to="/" className="flex items-center gap-2.5 group" aria-label="CampusBite home">
+          <div className="relative">
+            <img
+              src="/pwa-192x192.png"
+              alt="CampusBite icon"
+              className="h-9 w-9 rounded-xl shadow-sm ring-1 ring-brand-500/20 object-cover transition group-hover:scale-105"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-leaf-500 ring-2 ring-white dark:ring-ink-950" title="Canteen Open" />
+          </div>
+          <div>
+            <span className="font-display text-xl font-black tracking-tight block leading-none">
+              Campus<span className="text-brand-600 dark:text-brand-400">Bite</span>
+            </span>
+            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-ink-400">
+              Canteen & Hostels
+            </span>
+          </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">{links}</nav>
+        {/* Customer Nav Links (Desktop) */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {customerLinks}
+        </nav>
 
-        <div className="flex items-center gap-1.5">
+        {/* Action Controls: Card/Cart Section, Theme, Profile */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Install App button if available */}
           {!isInstalled && (
             <button
               onClick={() => promptInstall()}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-600 transition hover:bg-brand-500/20 dark:text-brand-400"
+              className="hidden lg:inline-flex items-center gap-1.5 rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-600 transition hover:bg-brand-500/20 dark:text-brand-400"
               title="Install CampusBite as a Standalone App"
             >
-              <Download size={14} /> Install App
+              <Download size={14} /> Install
             </button>
           )}
 
+          {/* Theme Toggle */}
           <button
             onClick={() => setDark(toggleTheme())}
-            className="rounded-xl p-2.5 text-ink-500 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
+            className="rounded-xl p-2 text-ink-500 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800 transition"
             aria-label="Toggle dark mode"
           >
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
+            {dark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
           </button>
 
-          <button onClick={openCart} className="relative rounded-xl bg-ink-900 p-2.5 text-white hover:bg-ink-700 dark:bg-white dark:text-ink-900" aria-label={`Open cart, ${count} items`}>
-            <ShoppingBag size={18} />
+          {/* CARD / CART ORDER SECTION: Prominent customer order button */}
+          <button
+            onClick={openCart}
+            className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 font-bold transition active:scale-95 shadow-sm ${
+              count > 0
+                ? 'bg-brand-500 text-ink-950 hover:bg-brand-400 ring-2 ring-brand-500/30'
+                : 'bg-ink-900 text-white hover:bg-ink-700 dark:bg-white dark:text-ink-900 dark:hover:bg-ink-100'
+            }`}
+            aria-label={`Open cart, ${count} items. Order now`}
+          >
+            <div className="relative">
+              <ShoppingBag size={18} />
+              {count > 0 && (
+                <span className="absolute -right-2.5 -top-2.5 grid h-4 min-w-4 place-items-center rounded-full bg-ink-950 px-1 text-[10px] font-black text-white dark:bg-ink-900">
+                  {count}
+                </span>
+              )}
+            </div>
+
+            <span className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+              <span>Order</span>
+              {count > 0 && (
+                <span className="opacity-90 font-mono text-xs">
+                  • {rupees(subtotal)}
+                </span>
+              )}
+            </span>
+
             {count > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold text-ink-950">
-                {count}
-              </span>
+              <span className="hidden sm:inline-block ml-0.5 h-2 w-2 rounded-full bg-leaf-500 animate-ping2" />
             )}
           </button>
 
-          {user ? (
-            <>
-              <span className="hidden max-w-24 truncate pl-1 text-sm font-semibold sm:inline">{user.fullName.split(' ')[0]}</span>
-              <button
-                onClick={() => { logout(); navigate('/'); }}
-                className="rounded-xl p-2.5 text-ink-400 hover:bg-ink-100 hover:text-chili-500 dark:hover:bg-ink-800"
-                aria-label="Log out"
-                title="Log out"
-              >
-                <LogOut size={18} />
-              </button>
-            </>
-          ) : (
-            <Link to="/login" className="btn-primary !px-3.5 !py-2"><User size={15} /> Log in</Link>
-          )}
+          {/* CUSTOMER PROFILE SECTION */}
+          <ProfileDropdown />
         </div>
       </div>
-
-      {/* Mobile nav */}
-      <nav className="flex items-center justify-between gap-1 overflow-x-auto border-t border-ink-100 px-4 py-1.5 scrollbar-none dark:border-ink-800 md:hidden">
-        <div className="flex items-center gap-1">{links}</div>
-        {!isInstalled && (
-          <button
-            onClick={() => promptInstall()}
-            className="flex items-center gap-1 rounded-lg bg-brand-500/15 px-2.5 py-1 text-xs font-bold text-brand-600 shrink-0 dark:text-brand-400"
-          >
-            <Download size={13} /> Install
-          </button>
-        )}
-      </nav>
     </header>
   );
 }

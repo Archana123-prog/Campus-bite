@@ -24,8 +24,9 @@
           window.__onPwaInstalled();
         }
       });
-      // Register service worker immediately
-      if ('serviceWorker' in navigator) {
+      // Register service worker in production
+      var isDevHost = ['localhost', '127.0.0.1'].indexOf(window.location.hostname) !== -1 || window.location.port === '5173' || window.location.port === '5174';
+      if ('serviceWorker' in navigator && !isDevHost) {
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
           .then(function (reg) {
             console.log('[PWA] SW registered immediately:', reg.scope);
