@@ -68,7 +68,7 @@ export default function RegisterPage() {
           </div>
         </div>
         <button disabled={busy} className="btn-primary w-full !py-3"><UserPlus size={16} /> {busy ? 'Creating…' : 'Create account'}</button>
-        <p className="text-center text-sm text-ink-500">
+        <p className="text-center text-sm text-ink-500 dark:text-ink-300">
           Already registered? <Link to="/login" className="font-bold text-brand-700 hover:underline dark:text-brand-400">Log in</Link>
         </p>
       </form>

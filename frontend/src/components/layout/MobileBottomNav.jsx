@@ -19,7 +19,7 @@ export default function MobileBottomNav() {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="fixed bottom-0 inset-x-0 z-40 md:hidden border-t border-ink-100 bg-white/95 backdrop-blur-md px-3 py-2 shadow-lg"
+      className="fixed bottom-0 inset-x-0 z-40 md:hidden border-t border-ink-100 bg-white/95 backdrop-blur-md px-3 py-2 shadow-lg dark:border-ink-800 dark:bg-ink-950/95"
     >
       <div className="mx-auto flex max-w-md items-center justify-around">
         {/* Home / Card Swiper */}
@@ -27,7 +27,7 @@ export default function MobileBottomNav() {
           to="/"
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-bold transition ${
-              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700'
+              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700 dark:text-ink-300 dark:hover:text-white'
             }`
           }
         >
@@ -40,7 +40,7 @@ export default function MobileBottomNav() {
           to="/menu"
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-bold transition ${
-              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700'
+              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700 dark:text-ink-300 dark:hover:text-white'
             }`
           }
         >
@@ -54,7 +54,7 @@ export default function MobileBottomNav() {
           className="relative -mt-5 flex flex-col items-center justify-center"
           aria-label={`Open Cart and Order (${count} items)`}
         >
-          <div className="relative grid h-13 w-13 place-items-center rounded-full bg-brand-500 text-ink-950 shadow-lg shadow-brand-500/30 transition active:scale-95 ring-4 ring-white">
+          <div className="relative grid h-13 w-13 place-items-center rounded-full bg-brand-500 text-ink-950 shadow-lg shadow-brand-500/30 transition active:scale-95 ring-4 ring-white dark:ring-ink-950">
             <ShoppingBag size={22} strokeWidth={2.4} />
             {count > 0 && (
               <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-black text-white ring-2 ring-brand-500">
@@ -72,7 +72,7 @@ export default function MobileBottomNav() {
           to={user ? '/orders' : '/login'}
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-bold transition ${
-              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700'
+              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700 dark:text-ink-300 dark:hover:text-white'
             }`
           }
         >
@@ -85,7 +85,7 @@ export default function MobileBottomNav() {
           to={user ? '/profile' : '/login'}
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-bold transition ${
-              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700'
+              isActive ? 'text-brand-600' : 'text-ink-400 hover:text-ink-700 dark:text-ink-300 dark:hover:text-white'
             }`
           }
         >

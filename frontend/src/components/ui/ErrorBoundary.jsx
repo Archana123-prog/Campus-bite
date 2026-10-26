@@ -34,7 +34,7 @@ export default class ErrorBoundary extends React.Component {
           <h2 className="mt-4 font-display text-2xl font-black text-ink-900 dark:text-white">
             Something went wrong
           </h2>
-          <p className="mt-2 max-w-md text-sm text-ink-500 dark:text-ink-400">
+          <p className="mt-2 max-w-md text-sm text-ink-500 dark:text-ink-300">
             We encountered a temporary hiccup loading this section. Tap below to reload smoothly.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

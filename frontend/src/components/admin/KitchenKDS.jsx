@@ -147,7 +147,7 @@ export default function KitchenKDS() {
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs dark:bg-ink-800">{list.length}</span>
               </h3>
               <div className="space-y-3">
-                {list.length === 0 && <p className="py-6 text-center text-xs text-ink-400">Nothing here</p>}
+                {list.length === 0 && <p className="py-6 text-center text-xs text-ink-400 dark:text-ink-300">Nothing here</p>}
                 {list.map((o) => {
                   const action = nextStatus(o);
                   const late = Date.now() - new Date(o.createdAt).getTime() > 20 * 60000 && o.status !== 'OUT_FOR_DELIVERY';
@@ -155,7 +155,7 @@ export default function KitchenKDS() {
                     <article key={o.id} className={`card p-3.5 shadow-sm ${late ? 'ring-2 ring-chili-500/60' : ''}`}>
                       <div className="flex items-start justify-between">
                         <span className="font-display text-xl font-extrabold">#{o.orderNumber}</span>
-                        <span className={`flex items-center gap-1 text-[11px] ${late ? 'font-bold text-chili-500' : 'text-ink-400'}`}>
+                        <span className={`flex items-center gap-1 text-[11px] ${late ? 'font-bold text-chili-500' : 'text-ink-400 dark:text-ink-300'}`}>
                           <Clock size={11} /> {timeAgo(o.createdAt)}
                         </span>
                       </div>
@@ -165,7 +165,7 @@ export default function KitchenKDS() {
                         {o.orderType === 'HOSTEL_DELIVERY' && <><MapPin size={14} className="text-violet-500" /> {o.hostelBlock}, Rm {o.roomNumber}</>}
                         {o.orderType === 'TAKEAWAY' && <><ShoppingBag size={14} className="text-leaf-500" /> Pickup</>}
                       </p>
-                      <p className="text-xs text-ink-400">{o.user?.fullName || 'Guest'} · {o.user?.phone}</p>
+                      <p className="text-xs text-ink-400 dark:text-ink-300">{o.user?.fullName || 'Guest'} · {o.user?.phone}</p>
 
                       <ul className="mt-2.5 space-y-1 border-t border-ink-100 pt-2 text-sm dark:border-ink-700">
                         {o.orderItems.map((i) => (
@@ -174,7 +174,7 @@ export default function KitchenKDS() {
                       </ul>
                       {o.notes && <p className="mt-2 rounded-lg bg-brand-50 px-2 py-1.5 text-xs text-brand-900 dark:bg-brand-500/10 dark:text-brand-200">“{o.notes}”</p>}
 
-                        <div className="mt-2 flex items-center justify-between text-xs text-ink-400">
+                        <div className="mt-2 flex items-center justify-between text-xs text-ink-400 dark:text-ink-300">
                         <span>{rupees(o.totalAmount)} · {o.paymentMethod}</span>
                         {o.runner && <span className="flex items-center gap-1"><Bike size={12} className="text-brand-600" /> {o.runner.fullName}</span>}
                       </div>

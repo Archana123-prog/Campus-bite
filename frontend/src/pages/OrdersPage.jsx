@@ -61,7 +61,7 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight">Order History</h1>
-          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-300">
             Track past orders or reorder your favorite meals with one click.
           </p>
         </div>
@@ -79,11 +79,11 @@ export default function OrdersPage() {
 
       {orders?.length === 0 && (
         <div className="card mt-8 p-12 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-300">
             <ReceiptText size={32} />
           </div>
           <h2 className="mt-4 font-display text-xl font-bold">No orders placed yet</h2>
-          <p className="mt-1.5 text-sm text-ink-500 dark:text-ink-400">
+          <p className="mt-1.5 text-sm text-ink-500 dark:text-ink-300">
             When you order dishes, your receipts and live tracker will appear right here.
           </p>
           <Link to="/menu" className="btn-primary mt-5 !px-6 !py-3">
@@ -104,7 +104,7 @@ export default function OrdersPage() {
                       #{o.orderNumber}
                     </span>
                     <StatusBadge status={o.status} />
-                    <span className="text-xs text-ink-400 font-semibold">
+                    <span className="text-xs text-ink-400 dark:text-ink-300 font-semibold">
                       • {dateTimeOf(o.createdAt)}
                     </span>
                   </div>
@@ -117,7 +117,7 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Delivery Location & Notes */}
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-400">
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-400 dark:text-ink-300">
                     <span className="flex items-center gap-1">
                       {o.orderType === 'HOSTEL_DELIVERY' && <Home size={12} />}
                       {o.orderType === 'DINE_IN' && <Armchair size={12} />}
@@ -132,7 +132,7 @@ export default function OrdersPage() {
                     <span>Payment: <strong className="text-ink-600 dark:text-ink-300">{o.paymentMethod}</strong></span>
 
                     {o.notes && (
-                      <span className="truncate max-w-xs italic text-ink-400">
+                      <span className="truncate max-w-xs italic text-ink-400 dark:text-ink-300">
                         "{o.notes}"
                       </span>
                     )}
@@ -141,7 +141,7 @@ export default function OrdersPage() {
 
                 {/* Right: Total Amount */}
                 <div className="text-left sm:text-right shrink-0">
-                  <span className="text-xs text-ink-400 block font-semibold">Total Paid</span>
+                  <span className="text-xs text-ink-400 dark:text-ink-300 block font-semibold">Total Paid</span>
                   <span className="font-display text-xl font-black text-ink-900 dark:text-white">
                     {rupees(o.totalAmount)}
                   </span>
@@ -152,7 +152,7 @@ export default function OrdersPage() {
               <div className="mt-4 pt-3 border-t border-ink-100 dark:border-ink-800 flex items-center justify-between gap-3">
                 <Link
                   to={`/track/${o.id}`}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-ink-500 hover:text-brand-600 dark:text-ink-400 dark:hover:text-brand-400"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-ink-500 hover:text-brand-600 dark:text-ink-300 dark:hover:text-brand-400"
                 >
                   <span>Track Status / View Receipt</span>
                   <ChevronRight size={14} />

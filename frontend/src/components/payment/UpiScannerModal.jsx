@@ -34,7 +34,7 @@ export default function UpiScannerModal({
         >
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-full p-2 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
+            className="absolute right-4 top-4 rounded-full p-2 text-ink-400 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800"
             aria-label="Close"
           >
             <X size={18} />
@@ -46,7 +46,7 @@ export default function UpiScannerModal({
             </span>
             <div>
               <h2 className="font-display text-lg font-black">Scan & Pay Online</h2>
-              <p className="text-xs text-ink-400">Complete payment with your preferred UPI app</p>
+              <p className="text-xs text-ink-400 dark:text-ink-300">Complete payment with your preferred UPI app</p>
             </div>
           </div>
 

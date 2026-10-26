@@ -115,7 +115,7 @@ export default function ProductDetailPage() {
         <div className="card p-8">
           <Utensils className="mx-auto text-ink-300" size={40} />
           <h1 className="mt-3 font-display text-2xl font-bold">Dish Not Found</h1>
-          <p className="mt-2 text-sm text-ink-500">This item might no longer be available on today's canteen menu.</p>
+          <p className="mt-2 text-sm text-ink-500 dark:text-ink-300">This item might no longer be available on today's canteen menu.</p>
           <Link to="/menu" className="btn-primary mt-6">Back to Menu</Link>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function ProductDetailPage() {
       <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-xs font-bold text-ink-500 hover:text-ink-900 dark:text-ink-400 dark:hover:text-white"
+          className="flex items-center gap-1.5 text-xs font-bold text-ink-500 hover:text-ink-900 dark:text-ink-300 dark:hover:text-white"
         >
           <ArrowLeft size={16} /> Back to Menu
         </button>
@@ -188,14 +188,14 @@ export default function ProductDetailPage() {
               <span className="font-display text-3xl font-black text-ink-900 dark:text-brand-400">
                 {rupees(item.price)}
               </span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-ink-400">
+              <span className="flex items-center gap-1 text-xs font-semibold text-ink-400 dark:text-ink-300">
                 <Clock size={14} /> Estimated prep time ~{item.prepTimeMins || 10} mins
               </span>
             </div>
           </div>
 
           <div className="py-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-ink-400">Description</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-ink-400 dark:text-ink-300">Description</h3>
             <p className="mt-1 text-sm text-ink-600 dark:text-ink-300 leading-relaxed">
               {item.description || 'Freshly prepared at the college canteen using authentic local ingredients.'}
             </p>
@@ -229,7 +229,7 @@ export default function ProductDetailPage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-ink-200/60 pt-3 dark:border-ink-700/60 text-xs font-bold">
-                  <span className="text-ink-500">Subtotal for this dish:</span>
+                  <span className="text-ink-500 dark:text-ink-300">Subtotal for this dish:</span>
                   <span className="text-base text-brand-600 dark:text-brand-400 font-black">
                     {rupees(item.price * quantity)}
                   </span>
@@ -276,7 +276,7 @@ export default function ProductDetailPage() {
           )}
 
           {isSoldOut && (
-            <div className="mt-6 rounded-2xl bg-ink-50 p-4 text-center text-xs text-ink-500 dark:bg-ink-800">
+            <div className="mt-6 rounded-2xl bg-ink-50 p-4 text-center text-xs text-ink-500 dark:bg-ink-800 dark:text-ink-300">
               This dish is currently sold out in the kitchen. Please check back later or explore other dishes!
             </div>
           )}

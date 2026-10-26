@@ -2,7 +2,7 @@ const KEY = 'campusbite-theme';
 
 export function initTheme() {
   const saved = localStorage.getItem(KEY);
-  const dark = saved ? saved === 'dark' : window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  const dark = saved !== 'light';
   document.documentElement.classList.toggle('dark', dark);
 }
 

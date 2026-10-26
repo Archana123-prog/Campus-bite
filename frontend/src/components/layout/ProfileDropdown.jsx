@@ -88,8 +88,8 @@ export default function ProfileDropdown() {
         aria-haspopup="true"
         className={`flex items-center gap-2 rounded-xl p-1.5 sm:px-2.5 sm:py-1.5 transition ${
           isOpen
-            ? 'bg-ink-100 ring-2 ring-brand-500/30'
-            : 'hover:bg-ink-100'
+            ? 'bg-ink-100 ring-2 ring-brand-500/30 dark:bg-ink-800'
+            : 'hover:bg-ink-100 dark:hover:bg-ink-800'
         }`}
         title="Customer Profile & Settings"
       >
@@ -98,20 +98,20 @@ export default function ProfileDropdown() {
         </div>
         <div className="hidden text-left sm:block">
           <p className="max-w-28 truncate text-xs font-bold leading-tight">{firstName}</p>
-          <p className="text-[10px] text-ink-400">
+          <p className="text-[10px] text-ink-400 dark:text-ink-300">
             {user.role === 'ADMIN' ? 'Kitchen Admin' : user.role === 'DELIVERY_RUNNER' ? 'Runner' : 'Customer'}
           </p>
         </div>
         <ChevronDown
           size={14}
-          className={`text-ink-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-ink-400 dark:text-ink-300 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-ink-100 bg-white p-2 shadow-2xl animate-pop z-50">
+        <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-ink-100 bg-white p-2 shadow-2xl animate-pop z-50 dark:border-ink-800 dark:bg-ink-900">
           {/* User card info */}
-          <div className="rounded-xl bg-ink-50 p-3">
+          <div className="rounded-xl bg-ink-50 p-3 dark:bg-ink-800">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-tr from-brand-600 to-amber-400 text-sm font-extrabold text-ink-950 shadow-sm">
                 {initial}
@@ -120,7 +120,7 @@ export default function ProfileDropdown() {
                 <p className="truncate text-sm font-extrabold text-ink-900 dark:text-white">
                   {user.fullName || user.email || 'CampusBite Member'}
                 </p>
-                <p className="truncate text-[11px] text-ink-500 dark:text-ink-400">
+                <p className="truncate text-[11px] text-ink-500 dark:text-ink-300">
                   {user.email}
                 </p>
               </div>

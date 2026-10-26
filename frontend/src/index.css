@@ -8,14 +8,15 @@
     overflow-x: hidden;
     max-width: 100vw;
     -webkit-tap-highlight-color: transparent;
-    /* Always white/light background */
-    background-color: #ffffff;
+    @apply bg-white dark:bg-ink-950;
   }
   body {
-    @apply bg-white font-sans text-ink-900 antialiased;
+    @apply bg-white font-sans text-ink-900 antialiased dark:bg-ink-950 dark:text-ink-50;
   }
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
   h1, h2, h3, .font-display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
-  :focus-visible { @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white; }
+  :focus-visible { @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white dark:ring-offset-ink-950; }
   /* Safe area padding for notched phones */
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
   @media (prefers-reduced-motion: reduce) {
@@ -24,19 +25,20 @@
 }
 
 @layer components {
-  .card { @apply rounded-2xl border border-ink-100 bg-white; }
+  .card { @apply rounded-2xl border border-ink-100 bg-white dark:border-ink-800 dark:bg-ink-900; }
   .input {
     @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400
-      focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30;
+      focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30
+      dark:border-ink-700 dark:bg-ink-900 dark:text-ink-50 dark:placeholder:text-ink-400;
   }
-  .label { @apply mb-1 block text-xs font-semibold text-ink-500; }
+  .label { @apply mb-1 block text-xs font-semibold text-ink-500 dark:text-ink-300; }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
       disabled:cursor-not-allowed disabled:opacity-50 active:scale-[.98];
   }
   .btn-primary { @apply btn bg-brand-500 text-ink-950 hover:bg-brand-400; }
-  .btn-dark    { @apply btn bg-ink-900 text-white hover:bg-ink-700; }
-  .btn-ghost   { @apply btn bg-ink-100 text-ink-800 hover:bg-ink-200; }
+  .btn-dark    { @apply btn bg-ink-900 text-white hover:bg-ink-700 dark:bg-white dark:text-ink-950 dark:hover:bg-ink-100; }
+  .btn-ghost   { @apply btn bg-ink-100 text-ink-800 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-100 dark:hover:bg-ink-700; }
   .btn-danger  { @apply btn bg-chili-500 text-white hover:bg-chili-600; }
   .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold; }
   .scrollbar-none { scrollbar-width: none; }
@@ -51,4 +53,3 @@
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   .print-sticker { break-inside: avoid; }
 }
-

@@ -110,7 +110,7 @@ export default function ProfilePage() {
             <User size={32} />
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold">Customer Profile</h1>
-          <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
+          <p className="mt-2 text-sm text-ink-500 dark:text-ink-300">
             Please log in to manage your campus delivery address, track live orders, and customize your profile.
           </p>
           <div className="mt-6 flex flex-col gap-3">
@@ -145,7 +145,7 @@ export default function ProfilePage() {
                   <ShieldCheck size={12} /> {user.role === 'ADMIN' ? 'Admin' : user.role === 'DELIVERY_RUNNER' ? 'Runner' : 'Customer'}
                 </span>
               </div>
-              <p className="mt-1 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
+              <p className="mt-1 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-300">
                 <Mail size={14} /> {user.email}
               </p>
               {user.hostelBlock && (
@@ -234,7 +234,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between border-b border-ink-100 pb-4 dark:border-ink-800">
             <div>
               <h2 className="font-display text-lg font-bold">Delivery & Contact Details</h2>
-              <p className="text-xs text-ink-500 dark:text-ink-400">
+              <p className="text-xs text-ink-500 dark:text-ink-300">
                 Prefilled automatically when you order hot food to your hostel room.
               </p>
             </div>
@@ -249,7 +249,7 @@ export default function ProfilePage() {
                 Full Name
               </label>
               <div className="relative">
-                <User size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
+                <User size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-300" />
                 <input
                   id="profile-fullName"
                   type="text"
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                   Email (Cannot be changed)
                 </label>
                 <div className="relative">
-                  <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
+                  <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-300" />
                   <input
                     id="profile-email"
                     type="email"
@@ -284,7 +284,7 @@ export default function ProfilePage() {
                   Phone Number
                 </label>
                 <div className="relative">
-                  <Phone size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
+                  <Phone size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-300" />
                   <input
                     id="profile-phone"
                     type="tel"
@@ -326,7 +326,7 @@ export default function ProfilePage() {
                     Room Number
                   </label>
                   <div className="relative">
-                    <DoorClosed size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
+                    <DoorClosed size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-300" />
                     <input
                       id="profile-roomNumber"
                       type="text"
@@ -370,7 +370,7 @@ export default function ProfilePage() {
                   </span>
                   Explore Canteen Menu
                 </span>
-                <ChevronRight size={16} className="text-ink-400" />
+                <ChevronRight size={16} className="text-ink-400 dark:text-ink-300" />
               </Link>
 
               <button
@@ -384,7 +384,7 @@ export default function ProfilePage() {
                   </span>
                   View / Open Cart {cartCount > 0 && `(${cartCount})`}
                 </span>
-                <ChevronRight size={16} className="text-ink-400" />
+                <ChevronRight size={16} className="text-ink-400 dark:text-ink-300" />
               </button>
 
               <Link
@@ -397,7 +397,7 @@ export default function ProfilePage() {
                   </span>
                   View All Past Orders
                 </span>
-                <ChevronRight size={16} className="text-ink-400" />
+                <ChevronRight size={16} className="text-ink-400 dark:text-ink-300" />
               </Link>
             </div>
           </section>
@@ -412,9 +412,9 @@ export default function ProfilePage() {
             </div>
 
             {loadingOrders ? (
-              <div className="py-6 text-center text-xs text-ink-400">Loading orders…</div>
+              <div className="py-6 text-center text-xs text-ink-400 dark:text-ink-300">Loading orders…</div>
             ) : recentOrders.length === 0 ? (
-              <div className="py-6 text-center text-xs text-ink-400">
+              <div className="py-6 text-center text-xs text-ink-400 dark:text-ink-300">
                 No orders placed yet. Grab something tasty from the menu!
               </div>
             ) : (
@@ -432,7 +432,7 @@ export default function ProfilePage() {
                       <p className="mt-1 truncate text-xs text-ink-500 dark:text-ink-300">
                         {o.orderItems?.map((i) => `${i.quantity}x ${i.menuItem?.name}`).join(', ')}
                       </p>
-                      <div className="mt-1 flex items-center justify-between text-[11px] text-ink-400">
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-ink-400 dark:text-ink-300">
                         <span>{dateTimeOf(o.createdAt)}</span>
                         <span className="font-bold text-ink-800 dark:text-ink-100">{rupees(o.totalAmount)}</span>
                       </div>

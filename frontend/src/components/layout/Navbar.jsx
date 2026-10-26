@@ -14,15 +14,14 @@ import {
 import { useCartStore, selectCount, selectSubtotal } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePwaStore } from '../../store/usePwaStore';
-import { toggleTheme, isDark } from '../../utils/theme';
 import { rupees } from '../../utils/format';
 import ProfileDropdown from './ProfileDropdown';
 
 const linkCls = ({ isActive }) =>
   `flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
     isActive
-      ? 'bg-ink-900 text-white shadow-sm'
-      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
+      ? 'bg-ink-900 text-white shadow-sm dark:bg-white dark:text-ink-950'
+      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-white'
   }`;
 
 export default function Navbar() {
@@ -65,7 +64,7 @@ export default function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md shadow-xs">
+    <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md shadow-xs dark:border-ink-800 dark:bg-ink-950/90">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         {/* Brand / Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" aria-label="CampusBite home">
@@ -81,7 +80,7 @@ export default function Navbar() {
             <span className="font-display text-xl font-black tracking-tight block leading-none">
               Campus<span className="text-brand-600 dark:text-brand-400">Bite</span>
             </span>
-            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-ink-400">
+            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-300">
               Canteen & Hostels
             </span>
           </div>
@@ -112,7 +111,7 @@ export default function Navbar() {
             className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 font-bold transition active:scale-95 shadow-sm ${
               count > 0
                 ? 'bg-brand-500 text-ink-950 hover:bg-brand-400 ring-2 ring-brand-500/30'
-                : 'bg-ink-900 text-white hover:bg-ink-700'
+                : 'bg-ink-900 text-white hover:bg-ink-700 dark:bg-white dark:text-ink-950 dark:hover:bg-ink-100'
             }`}
             aria-label={`Open cart, ${count} items. Order now`}
           >

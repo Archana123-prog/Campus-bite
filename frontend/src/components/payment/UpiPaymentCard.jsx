@@ -55,7 +55,7 @@ export default function UpiPaymentCard({
             <h3 className="font-display text-sm font-extrabold text-ink-900 dark:text-white">
               Canteen UPI Online Scanner
             </h3>
-            <p className="text-[11px] text-ink-500 dark:text-ink-400">
+            <p className="text-[11px] text-ink-500 dark:text-ink-300">
               Pay securely via any UPI App (GPay, PhonePe, Paytm, BHIM)
             </p>
           </div>
@@ -80,7 +80,7 @@ export default function UpiPaymentCard({
               </span>
             </div>
           </div>
-          <span className="mt-1.5 text-center text-[10px] font-semibold text-ink-400">
+          <span className="mt-1.5 text-center text-[10px] font-semibold text-ink-400 dark:text-ink-300">
             Scan with any UPI App
           </span>
         </div>
@@ -90,11 +90,11 @@ export default function UpiPaymentCard({
           {/* Payee Info */}
           <div className="rounded-xl bg-ink-50 p-2.5 text-xs dark:bg-ink-800/60">
             <div className="flex items-center justify-between">
-              <span className="text-ink-400 font-medium">Payee Name:</span>
+              <span className="text-ink-400 font-medium dark:text-ink-300">Payee Name:</span>
               <span className="font-bold text-ink-900 dark:text-white">{configUpiName}</span>
             </div>
             <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-ink-100 pt-1.5 dark:border-ink-700/60">
-              <span className="text-ink-400 font-medium">UPI ID:</span>
+              <span className="text-ink-400 font-medium dark:text-ink-300">UPI ID:</span>
               <div className="flex items-center gap-1.5 font-mono font-bold text-brand-700 dark:text-brand-400">
                 <span>{configUpiId}</span>
                 <button
@@ -156,7 +156,7 @@ export default function UpiPaymentCard({
               onChange={(e) => onUtrChange && onUtrChange(e.target.value.trim())}
             />
           </div>
-          <p className="mt-1 flex items-center gap-1 text-[11px] text-ink-400">
+          <p className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 dark:text-ink-300">
             <Info size={11} /> Enter your UPI payment UTR or reference number to help canteen verify instantly.
           </p>
         </div>

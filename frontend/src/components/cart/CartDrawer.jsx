@@ -155,20 +155,20 @@ export default function CartDrawer() {
         aria-modal="true"
         aria-label="Your cart"
         onMouseDown={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-md animate-slideIn flex-col bg-white shadow-2xl"
+        className="flex h-full w-full max-w-md animate-slideIn flex-col bg-white shadow-2xl dark:bg-ink-900"
       >
         <header className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
           <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-            <ShoppingBag size={20} className="text-brand-600" /> Your cart {count > 0 && <span className="text-ink-400">({count})</span>}
+            <ShoppingBag size={20} className="text-brand-600" /> Your cart {count > 0 && <span className="text-ink-400 dark:text-ink-300">({count})</span>}
           </h2>
-          <button onClick={s.closeCart} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100" aria-label="Close cart">
+          <button onClick={s.closeCart} className="rounded-lg p-1.5 text-ink-400 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800" aria-label="Close cart">
             <X size={20} />
           </button>
         </header>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
           {s.cart.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center text-ink-400">
+            <div className="flex flex-col items-center gap-3 py-16 text-center text-ink-400 dark:text-ink-300">
               <ShoppingCart size={36} />
               <p className="text-sm">Your cart is empty.</p>
               <button onClick={() => { s.closeCart(); navigate('/menu'); }} className="btn-primary">Browse the menu</button>
@@ -177,7 +177,7 @@ export default function CartDrawer() {
             <>
               <ul className="space-y-2.5">
                 {s.cart.map((item) => (
-                  <li key={item.menuItemId} className="flex items-center gap-3 rounded-xl bg-ink-50 p-2.5">
+                  <li key={item.menuItemId} className="flex items-center gap-3 rounded-xl bg-ink-50 p-2.5 dark:bg-ink-800">
                     <FoodImage src={item.imageUrl} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{item.name}</p>
@@ -191,7 +191,7 @@ export default function CartDrawer() {
                       <button onClick={() => s.setQuantity(item.menuItemId, item.quantity + 1)} className="grid h-7 w-7 place-items-center rounded-lg bg-white shadow-sm dark:bg-ink-700" aria-label={`Increase ${item.name}`}>
                         <Plus size={13} />
                       </button>
-                      <button onClick={() => s.removeItem(item.menuItemId)} className="ml-1 p-1 text-ink-400 hover:text-chili-500" aria-label={`Remove ${item.name}`}>
+                      <button onClick={() => s.removeItem(item.menuItemId)} className="ml-1 p-1 text-ink-400 dark:text-ink-300 hover:text-chili-500" aria-label={`Remove ${item.name}`}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -208,7 +208,7 @@ export default function CartDrawer() {
                       onClick={() => s.setOrderType(type)}
                       aria-pressed={s.orderType === type}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
-                        s.orderType === type ? 'bg-white text-ink-900 shadow dark:bg-ink-600 dark:text-white' : 'text-ink-500'
+                        s.orderType === type ? 'bg-white text-ink-900 shadow dark:bg-ink-600 dark:text-white' : 'text-ink-500 dark:text-ink-300'
                       }`}
                     >
                       <Icon size={14} /> {label}
@@ -261,13 +261,15 @@ export default function CartDrawer() {
                       onClick={() => s.setPaymentMethod(id)}
                       aria-pressed={s.paymentMethod === id}
                       className={`flex items-center gap-2 rounded-xl border-2 p-2.5 text-left transition ${
-                        s.paymentMethod === id ? 'border-brand-500 bg-brand-50' : 'border-ink-100'
+                        s.paymentMethod === id
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/15'
+                          : 'border-ink-100 dark:border-ink-700'
                       }`}
                     >
                       <Icon size={18} className="text-brand-700 shrink-0" />
                       <span>
                         <span className="block text-sm font-bold">{label}</span>
-                        <span className="block text-[11px] text-ink-400">{hint}</span>
+                        <span className="block text-[11px] text-ink-400 dark:text-ink-300">{hint}</span>
                       </span>
                     </button>
                   ))}
@@ -279,7 +281,7 @@ export default function CartDrawer() {
                       <img src="/canteen-scanner.jpg" alt="UPI QR" className="h-8 w-8 rounded-lg object-contain bg-white p-0.5 border border-brand-500/30" />
                       <div>
                         <p className="font-bold leading-tight">Archana Kumari (7488325002@upi)</p>
-                        <p className="text-[10px] text-ink-500 dark:text-ink-400">Scan & pay with GPay/PhonePe</p>
+                        <p className="text-[10px] text-ink-500 dark:text-ink-300">Scan & pay with GPay/PhonePe</p>
                       </div>
                     </div>
                     <button

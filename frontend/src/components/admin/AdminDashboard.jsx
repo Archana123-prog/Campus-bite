@@ -38,7 +38,7 @@ export default function AdminDashboard() {
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-500 text-ink-950"><Icon size={22} /></span>
             <div>
               <p className="text-2xl font-extrabold">{value}</p>
-              <p className="text-xs text-ink-500">{label}</p>
+              <p className="text-xs text-ink-500 dark:text-ink-300">{label}</p>
             </div>
           </div>
         ))}
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
           <ul className="mt-3 space-y-3">
             {types.map(({ key, label, icon: Icon }) => (
               <li key={key} className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2"><Icon size={16} className="text-ink-400" /> {label}</span>
+                <span className="flex items-center gap-2"><Icon size={16} className="text-ink-400 dark:text-ink-300" /> {label}</span>
                 <b>{stats.byType[key] || 0}</b>
               </li>
             ))}
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
         <section className="card p-5">
           <h3 className="font-display text-lg font-bold">Top dishes this week</h3>
           {stats.topItems.length === 0 ? (
-            <p className="mt-3 text-sm text-ink-400">No orders yet.</p>
+            <p className="mt-3 text-sm text-ink-400 dark:text-ink-300">No orders yet.</p>
           ) : (
             <ul className="mt-3 space-y-3">
               {stats.topItems.map((t) => (

@@ -83,7 +83,7 @@ export default function TableQRGenerator() {
             <label className="label" htmlFor="qr-base">Website address</label>
             <input id="qr-base" className="input font-mono text-xs" value={base} onChange={(e) => setBase(e.target.value)} />
           </div>
-          <p className="break-all rounded-lg bg-ink-50 p-2 font-mono text-[11px] text-ink-500 dark:bg-ink-800">{makeUrl(base, table || '1')}</p>
+          <p className="break-all rounded-lg bg-ink-50 p-2 font-mono text-[11px] text-ink-500 dark:bg-ink-800 dark:text-ink-300">{makeUrl(base, table || '1')}</p>
           <div className="flex flex-wrap gap-2">
             <button onClick={downloadPng} className="btn-primary"><Download size={16} /> Download PNG</button>
             <button onClick={() => window.print()} className="btn-ghost"><Printer size={16} /> Print all {tableCount} tables</button>

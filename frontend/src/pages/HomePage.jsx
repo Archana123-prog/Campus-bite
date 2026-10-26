@@ -179,7 +179,7 @@ export default function HomePage() {
             <Zap size={14} className="text-brand-600 fill-brand-600 dark:text-brand-400" />
             <span>Skip the Canteen Queue</span>
             <span className="h-1 w-1 rounded-full bg-brand-500" />
-            <span className="flex items-center gap-1 text-[11px] text-ink-500 dark:text-ink-400 font-semibold">
+            <span className="flex items-center gap-1 text-[11px] text-ink-500 dark:text-ink-300 font-semibold">
               <Repeat size={11} /> Continuous Loop Active
             </span>
           </div>
@@ -234,7 +234,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-2xl font-black sm:text-3xl">How do you want it delivered?</h2>
-            <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+            <p className="mt-1 text-sm text-ink-500 dark:text-ink-300">
               Choose your order style and start picking your meals.
             </p>
           </div>

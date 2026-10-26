@@ -50,7 +50,7 @@ export default function StaffManager() {
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <form onSubmit={create} className="card space-y-3 p-5">
         <h2 className="font-display text-xl font-bold">Add canteen staff</h2>
-        <p className="text-xs text-ink-500">Delivery runners can see ready hostel orders and accept them. Admins run the kitchen.</p>
+        <p className="text-xs text-ink-500 dark:text-ink-300">Delivery runners can see ready hostel orders and accept them. Admins run the kitchen.</p>
         <input required className="input" placeholder="Full name" value={form.fullName} onChange={set('fullName')} />
         <input required type="email" className="input" placeholder="Email" value={form.email} onChange={set('email')} />
         <input required className="input" placeholder="Phone" value={form.phone} onChange={set('phone')} />
@@ -70,8 +70,8 @@ export default function StaffManager() {
               {s.role === 'ADMIN' ? <ShieldCheck size={18} /> : <Bike size={18} />}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-bold">{s.fullName} {s.id === me?.id && <span className="text-xs font-normal text-ink-400">(you)</span>}</p>
-              <p className="truncate text-xs text-ink-400">{s.email} · {s.phone}</p>
+              <p className="truncate font-bold">{s.fullName} {s.id === me?.id && <span className="text-xs font-normal text-ink-400 dark:text-ink-300">(you)</span>}</p>
+              <p className="truncate text-xs text-ink-400 dark:text-ink-300">{s.email} · {s.phone}</p>
             </div>
             <span className="chip bg-ink-100 dark:bg-ink-800">{s.role === 'ADMIN' ? 'Admin' : 'Runner'}</span>
             {s.id !== me?.id && (

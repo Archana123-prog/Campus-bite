@@ -179,11 +179,11 @@ export default function PaymentCheckoutPage() {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <div className="card p-8">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-300">
             <ShoppingBag size={32} />
           </div>
           <h1 className="mt-4 font-display text-2xl font-black">Your Cart is Empty</h1>
-          <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
+          <p className="mt-2 text-sm text-ink-500 dark:text-ink-300">
             Add hot canteen specials to your cart or choose a dish from the menu to proceed with checkout.
           </p>
           <div className="mt-6 flex justify-center">
@@ -202,7 +202,7 @@ export default function PaymentCheckoutPage() {
       <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-xs font-bold text-ink-500 hover:text-ink-900 dark:text-ink-400 dark:hover:text-white"
+          className="flex items-center gap-1.5 text-xs font-bold text-ink-500 hover:text-ink-900 dark:text-ink-300 dark:hover:text-white"
         >
           <ArrowLeft size={16} /> Back
         </button>
@@ -215,7 +215,7 @@ export default function PaymentCheckoutPage() {
         <h1 className="font-display text-3xl font-black tracking-tight sm:text-4xl">
           Order Checkout & Payment
         </h1>
-        <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+        <p className="mt-1 text-sm text-ink-500 dark:text-ink-300">
           Review your items, delivery details, and pick your preferred payment method.
         </p>
       </div>
@@ -245,7 +245,7 @@ export default function PaymentCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-ink-400">
+                    <p className="text-xs text-ink-400 dark:text-ink-300">
                       {rupees(item.price)} each
                     </p>
                     <p className="mt-1 text-sm font-extrabold text-brand-600 dark:text-brand-400">
@@ -271,7 +271,7 @@ export default function PaymentCheckoutPage() {
                     </button>
                     <button
                       onClick={() => removeItem(item.menuItemId)}
-                      className="ml-2 p-1 text-ink-400 hover:text-chili-500"
+                      className="ml-2 p-1 text-ink-400 hover:text-chili-500 dark:text-ink-300"
                       aria-label="Remove item"
                       title="Remove dish"
                     >
@@ -295,12 +295,12 @@ export default function PaymentCheckoutPage() {
                   className={`flex flex-col items-center justify-center rounded-xl border-2 p-3 text-center transition ${
                     orderType === type
                       ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-500/10 text-ink-950 dark:text-white'
-                      : 'border-ink-100 dark:border-ink-800 text-ink-500 hover:border-ink-200'
+                      : 'border-ink-100 dark:border-ink-800 text-ink-500 dark:text-ink-300 hover:border-ink-200'
                   }`}
                 >
-                  <Icon size={20} className={orderType === type ? 'text-brand-600' : 'text-ink-400'} />
+                  <Icon size={20} className={orderType === type ? 'text-brand-600' : 'text-ink-400 dark:text-ink-300'} />
                   <span className="mt-1 text-xs font-bold">{label}</span>
-                  <span className="text-[10px] text-ink-400 line-clamp-1">{hint}</span>
+                  <span className="text-[10px] text-ink-400 dark:text-ink-300 line-clamp-1">{hint}</span>
                 </button>
               ))}
             </div>
@@ -409,7 +409,9 @@ export default function PaymentCheckoutPage() {
                   }`}
                 >
                   <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                    paymentMethod === id ? 'bg-brand-500 text-ink-950 font-bold' : 'bg-ink-100 text-ink-600'
+                    paymentMethod === id
+                      ? 'bg-brand-500 text-ink-950 font-bold'
+                      : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'
                   }`}>
                     <Icon size={20} />
                   </span>
@@ -422,7 +424,7 @@ export default function PaymentCheckoutPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-ink-400">{hint}</p>
+                    <p className="text-xs text-ink-400 dark:text-ink-300">{hint}</p>
                   </div>
                   {paymentMethod === id && (
                     <CheckCircle2 size={18} className="text-brand-600 shrink-0" />
@@ -484,7 +486,7 @@ export default function PaymentCheckoutPage() {
               )}
             </button>
 
-            <p className="mt-3 text-center text-[11px] text-ink-400 flex items-center justify-center gap-1">
+            <p className="mt-3 text-center text-[11px] text-ink-400 dark:text-ink-300 flex items-center justify-center gap-1">
               <ShieldCheck size={13} className="text-leaf-600" />
               Direct kitchen confirmation & live order tracking
             </p>

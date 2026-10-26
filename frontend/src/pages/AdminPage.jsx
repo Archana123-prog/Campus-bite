@@ -32,8 +32,8 @@ export default function AdminPage() {
               className={({ isActive }) =>
                 `btn shrink-0 !rounded-full !px-4 !py-2 text-sm ${
                   isActive
-                    ? 'bg-ink-900 text-white'
-                    : 'bg-white text-ink-600 ring-1 ring-ink-200'
+                    ? 'bg-ink-900 text-white dark:bg-white dark:text-ink-950'
+                    : 'bg-white text-ink-600 ring-1 ring-ink-200 dark:bg-ink-900 dark:text-ink-300 dark:ring-ink-700'
                 }`
               }
             >

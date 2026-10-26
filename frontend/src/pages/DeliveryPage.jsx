@@ -11,10 +11,10 @@ function DeliveryCard({ order, children }) {
     <article className="card p-4">
       <div className="flex items-start justify-between">
         <span className="font-display text-xl font-extrabold">#{order.orderNumber}</span>
-        <span className="flex items-center gap-1 text-xs text-ink-400"><Clock size={12} /> {timeAgo(order.createdAt)}</span>
+        <span className="flex items-center gap-1 text-xs text-ink-400 dark:text-ink-300"><Clock size={12} /> {timeAgo(order.createdAt)}</span>
       </div>
       <p className="mt-1 flex items-center gap-1.5 font-bold"><MapPin size={15} className="text-violet-500" /> {order.hostelBlock}, Room {order.roomNumber}</p>
-      <a href={`tel:${order.user?.phone}`} className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-500 hover:underline">
+      <a href={`tel:${order.user?.phone}`} className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-500 hover:underline dark:text-ink-300">
         <Phone size={13} /> {order.user?.fullName} · {order.user?.phone}
       </a>
       <p className="mt-2 text-sm text-ink-600 dark:text-ink-300">{order.orderItems.map((i) => `${i.quantity}× ${i.menuItem?.name}`).join(', ')}</p>
@@ -60,7 +60,7 @@ export default function DeliveryPage() {
         <section>
           <h2 className="mb-3 font-bold">Ready for pickup ({queue.available.length})</h2>
           <div className="space-y-3">
-            {queue.available.length === 0 && <p className="card p-6 text-center text-sm text-ink-400">No orders waiting. New ones appear here instantly.</p>}
+            {queue.available.length === 0 && <p className="card p-6 text-center text-sm text-ink-400 dark:text-ink-300">No orders waiting. New ones appear here instantly.</p>}
             {queue.available.map((o) => (
               <DeliveryCard key={o.id} order={o}>
                 <button onClick={() => act(o.id, 'accept')} className="btn-primary w-full"><Bike size={16} /> Accept delivery</button>
@@ -71,7 +71,7 @@ export default function DeliveryPage() {
         <section>
           <h2 className="mb-3 font-bold">My active deliveries ({queue.mine.length})</h2>
           <div className="space-y-3">
-            {queue.mine.length === 0 && <p className="card p-6 text-center text-sm text-ink-400">You have nothing on the road.</p>}
+            {queue.mine.length === 0 && <p className="card p-6 text-center text-sm text-ink-400 dark:text-ink-300">You have nothing on the road.</p>}
             {queue.mine.map((o) => (
               <DeliveryCard key={o.id} order={o}>
                 <button onClick={() => act(o.id, 'complete')} className="btn-dark w-full"><PackageCheck size={16} /> Mark delivered</button>

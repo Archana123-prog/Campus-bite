@@ -130,7 +130,7 @@ function StackCard({ item, depth, dir, isTop, stackIndex, onSwipe, onBuyNow, onO
         </div>
 
         <div className="pt-2 border-t border-ink-100 dark:border-ink-700/60 flex items-center justify-between">
-          <div className="text-xs font-semibold text-ink-400">
+          <div className="text-xs font-semibold text-ink-400 dark:text-ink-300">
             <span className="block truncate max-w-24">{item.category?.name || 'Canteen Special'}</span>
             <span className="flex items-center gap-1 text-[11px]">
               <Clock size={11} /> ~{item.prepTimeMins || 10} min
@@ -215,7 +215,7 @@ export default function SwipeCardStack({ items = [], onAdd, onOpenCart }) {
 
   if (total === 0) {
     return (
-      <div className="grid h-[430px] place-items-center rounded-3xl border border-dashed border-ink-200 text-center text-sm text-ink-400 dark:border-ink-700">
+      <div className="grid h-[430px] place-items-center rounded-3xl border border-dashed border-ink-200 text-center text-sm text-ink-400 dark:border-ink-700 dark:text-ink-300">
         <p className="max-w-52">Loading canteen dishes…</p>
       </div>
     );
@@ -246,13 +246,13 @@ export default function SwipeCardStack({ items = [], onAdd, onOpenCart }) {
           Loop Mode Active
         </span>
 
-        <div className="flex items-center gap-2 text-ink-400 font-semibold">
+        <div className="flex items-center gap-2 text-ink-400 dark:text-ink-300 font-semibold">
           <button
             onClick={() => setIsAutoPlaying((v) => !v)}
             className={`flex items-center gap-1 rounded-lg px-2 py-0.5 transition ${
               isAutoPlaying
                 ? 'bg-leaf-500/15 text-leaf-600 dark:text-leaf-300 font-bold'
-                : 'hover:bg-ink-100 text-ink-500 dark:hover:bg-ink-800'
+                : 'hover:bg-ink-100 text-ink-500 dark:text-ink-300 dark:hover:bg-ink-800'
             }`}
             title={isAutoPlaying ? 'Pause autoplay loop' : 'Start autoplay loop'}
           >
@@ -328,7 +328,7 @@ export default function SwipeCardStack({ items = [], onAdd, onOpenCart }) {
         </button>
       </div>
 
-      <p className="mt-3 text-center text-[11px] text-ink-400">
+      <p className="mt-3 text-center text-[11px] text-ink-400 dark:text-ink-300">
         Tap card to view full order details · Swipe right to add
       </p>
 

@@ -51,7 +51,7 @@ export default function LoginPage() {
           <input id="password" type="password" required autoComplete="current-password" className="input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </div>
         <button disabled={busy} className="btn-primary w-full !py-3"><LogIn size={16} /> {busy ? 'Logging in…' : 'Log in'}</button>
-        <p className="text-center text-sm text-ink-500">
+        <p className="text-center text-sm text-ink-500 dark:text-ink-300">
           New here? <Link to="/register" className="font-bold text-brand-700 hover:underline dark:text-brand-400">Create an account</Link>
         </p>
       </form>

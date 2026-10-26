@@ -111,13 +111,13 @@ export default function MenuManager() {
       </div>
 
       <div className="card divide-y divide-ink-100 dark:divide-ink-800">
-        {items.length === 0 && <p className="p-8 text-center text-sm text-ink-400">No dishes yet. Add a category, then your first dish.</p>}
+        {items.length === 0 && <p className="p-8 text-center text-sm text-ink-400 dark:text-ink-300">No dishes yet. Add a category, then your first dish.</p>}
         {items.map((item) => (
           <div key={item.id} className="flex flex-wrap items-center gap-3 p-3">
             <FoodImage src={item.imageUrl} alt={item.name} className="h-14 w-14 shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1 basis-40">
               <p className="flex items-center gap-1.5 font-bold"><VegMark isVeg={item.isVeg} /> <span className="truncate">{item.name}</span></p>
-              <p className="text-xs text-ink-400">{item.category?.name} · {rupees(item.price)} · ~{item.prepTimeMins} min</p>
+              <p className="text-xs text-ink-400 dark:text-ink-300">{item.category?.name} · {rupees(item.price)} · ~{item.prepTimeMins} min</p>
             </div>
             <div className="flex items-center gap-1.5">
               <button
@@ -129,7 +129,7 @@ export default function MenuManager() {
               </button>
               <button
                 onClick={() => toggle(item, 'featured')}
-                className={`rounded-lg p-2 ${item.isFeatured ? 'bg-brand-500 text-ink-950' : 'bg-ink-100 text-ink-400 dark:bg-ink-800'}`}
+                className={`rounded-lg p-2 ${item.isFeatured ? 'bg-brand-500 text-ink-950' : 'bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-300'}`}
                 title={item.isFeatured ? 'Shown in home swipe stack' : 'Add to home swipe stack'}
                 aria-label="Toggle home special"
               >

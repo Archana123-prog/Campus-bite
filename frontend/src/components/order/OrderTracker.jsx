@@ -105,12 +105,12 @@ export default function OrderTracker({ orderId }) {
                     className={`z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold ${
                       complete ? 'bg-leaf-500 text-white'
                       : active ? 'bg-brand-500 text-ink-950 ring-4 ring-brand-500/25'
-                      : 'bg-ink-100 text-ink-400 dark:bg-ink-700'
+                      : 'bg-ink-100 text-ink-400 dark:bg-ink-700 dark:text-ink-300'
                     }`}
                   >
                     {complete ? <Check size={16} strokeWidth={3} /> : i + 1}
                   </span>
-                  <p className={`pt-1 text-sm ${active ? 'font-bold' : complete ? 'font-semibold' : 'text-ink-400'}`}>{labels[step]}</p>
+                  <p className={`pt-1 text-sm ${active ? 'font-bold' : complete ? 'font-semibold' : 'text-ink-400 dark:text-ink-300'}`}>{labels[step]}</p>
                 </li>
               );
             })}
@@ -134,15 +134,15 @@ export default function OrderTracker({ orderId }) {
             ))}
           </ul>
           {Number(order.deliveryFee) > 0 && (
-            <div className="mt-2 flex justify-between text-sm text-ink-500"><span>Delivery</span><span>{rupees(order.deliveryFee)}</span></div>
+            <div className="mt-2 flex justify-between text-sm text-ink-500 dark:text-ink-300"><span>Delivery</span><span>{rupees(order.deliveryFee)}</span></div>
           )}
           <div className="mt-2 flex justify-between border-t border-ink-200 pt-2 font-extrabold dark:border-ink-700">
             <span>Total</span><span>{rupees(order.totalAmount)}</span>
           </div>
-          <p className="mt-1 text-xs text-ink-400">
+          <p className="mt-1 text-xs text-ink-400 dark:text-ink-300">
             {order.paymentStatus === 'COMPLETED' ? 'Paid' : `Pay ${order.paymentMethod === 'UPI' ? 'by UPI' : 'with cash'} on handover`}
           </p>
-          {order.notes && <p className="mt-2 text-xs text-ink-500">Note: “{order.notes}”</p>}
+          {order.notes && <p className="mt-2 text-xs text-ink-500 dark:text-ink-300">Note: “{order.notes}”</p>}
         </div>
 
         {order.paymentMethod === 'UPI' && order.paymentStatus !== 'COMPLETED' && !cancelled && (
@@ -154,7 +154,7 @@ export default function OrderTracker({ orderId }) {
                 </span>
                 <div>
                   <p className="font-extrabold text-ink-900 dark:text-white">Pay with Canteen UPI Scanner</p>
-                  <p className="text-[11px] text-ink-500 dark:text-ink-400">Archana Kumari • 7488325002@upi</p>
+                  <p className="text-[11px] text-ink-500 dark:text-ink-300">Archana Kumari • 7488325002@upi</p>
                 </div>
               </div>
               <button

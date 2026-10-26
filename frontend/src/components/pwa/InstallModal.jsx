@@ -42,7 +42,7 @@ export default function InstallModal() {
             {/* Close button */}
             <button
               onClick={close}
-              className="absolute right-4 top-4 rounded-full p-2 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
+              className="absolute right-4 top-4 rounded-full p-2 text-ink-400 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800"
               aria-label="Close"
             >
               <X size={18} />
@@ -62,7 +62,7 @@ export default function InstallModal() {
                 <h3 className="mt-1 font-display text-xl font-extrabold tracking-tight">
                   Install CampusBite
                 </h3>
-                <p className="text-xs text-ink-500 dark:text-ink-400">
+                <p className="text-xs text-ink-500 dark:text-ink-300">
                   Full-screen experience with no address bar
                 </p>
               </div>
@@ -139,7 +139,7 @@ export default function InstallModal() {
 
             <button
               onClick={close}
-              className="mt-3 w-full rounded-xl py-2 text-center text-xs font-semibold text-ink-400 hover:text-ink-600 dark:hover:text-ink-200"
+              className="mt-3 w-full rounded-xl py-2 text-center text-xs font-semibold text-ink-400 dark:text-ink-300 hover:text-ink-600 dark:hover:text-ink-100"
             >
               Close
             </button>

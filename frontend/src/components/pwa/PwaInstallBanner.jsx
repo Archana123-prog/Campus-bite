@@ -38,7 +38,7 @@ export default function PwaInstallBanner() {
                   <Sparkles size={9} /> Fast
                 </span>
               </div>
-              <p className="text-xs text-ink-500 dark:text-ink-400 truncate">
+              <p className="text-xs text-ink-500 dark:text-ink-300 truncate">
                 Install as standalone app on your device
               </p>
             </div>
@@ -53,7 +53,7 @@ export default function PwaInstallBanner() {
             </button>
             <button
               onClick={dismiss}
-              className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800 dark:hover:text-ink-200"
+              className="rounded-lg p-1.5 text-ink-400 dark:text-ink-300 hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800 dark:hover:text-ink-100"
               aria-label="Dismiss install banner"
             >
               <X size={15} />

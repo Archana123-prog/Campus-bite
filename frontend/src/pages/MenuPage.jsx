@@ -94,7 +94,7 @@ export default function MenuPage() {
         </div>
         <div className="flex gap-2">
           <div className="relative flex-1 md:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" size={16} />
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-300" size={16} />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -103,7 +103,7 @@ export default function MenuPage() {
               aria-label="Search menu"
             />
             {query && (
-              <button onClick={() => setQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-400" aria-label="Clear search">
+              <button onClick={() => setQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-300" aria-label="Clear search">
                 <X size={16} />
               </button>
             )}
@@ -150,7 +150,7 @@ export default function MenuPage() {
         <div className="card mt-8 p-10 text-center">
           <AlertCircle className="mx-auto text-chili-500" />
           <p className="mt-2 font-semibold">The menu could not be loaded.</p>
-          <p className="text-sm text-ink-500">Check that the backend is running, then try again.</p>
+          <p className="text-sm text-ink-500 dark:text-ink-300">Check that the backend is running, then try again.</p>
           <button onClick={load} className="btn-dark mt-4">Try again</button>
         </div>
       )}
@@ -218,7 +218,7 @@ export default function MenuPage() {
                       {item.description}
                     </p>
 
-                    <div className="mt-2 flex items-center justify-between text-[11px] text-ink-400 font-semibold">
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-ink-400 dark:text-ink-300 font-semibold">
                       <span>{item.category?.name}</span>
                       <span className="flex items-center gap-1">
                         <Clock size={11} /> ~{item.prepTimeMins || 10} min
@@ -229,7 +229,7 @@ export default function MenuPage() {
                   {/* MANDATORY ACTION BUTTONS: Add to Cart and Buy Now */}
                   <div className="mt-4 pt-3 border-t border-ink-100 dark:border-ink-800">
                     {!item.isAvailable ? (
-                      <span className="block text-center text-xs font-bold text-ink-400 py-1.5">
+                      <span className="block text-center text-xs font-bold text-ink-400 dark:text-ink-300 py-1.5">
                         Sold Out
                       </span>
                     ) : (
