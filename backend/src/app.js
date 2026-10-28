@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import { getConfig } from './controllers/menu.controller.js';
 import { notFound, errorHandler } from './middlewares/error.middleware.js';
+import prisma from './config/prisma.js';
 
 const app = express();
 
@@ -42,7 +43,31 @@ app.use(
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/', (_req, res) => res.json({ name: 'Pet Pooja API', status: 'ok' }));
-app.get('/api/v1/health', (_req, res) => res.json({ success: true, status: 'ok', time: new Date().toISOString() }));
+app.get('/api/v1/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.json({
+      success: true,
+      status: 'ok',
+      dependencies: {
+        database: 'connected',
+        razorpay: env.razorpayKeyId && env.razorpayKeySecret ? 'configured' : 'not_configured',
+      },
+      time: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(`❌ Health check database failure${error.code ? ` (${error.code})` : ''}: ${error.message}`);
+    return res.status(503).json({
+      success: false,
+      status: 'degraded',
+      dependencies: {
+        database: 'unavailable',
+        razorpay: env.razorpayKeyId && env.razorpayKeySecret ? 'configured' : 'not_configured',
+      },
+      time: new Date().toISOString(),
+    });
+  }
+});
 app.get('/api/v1/config', getConfig);
 
 app.use('/api/v1/auth', authRoutes);

@@ -26,8 +26,37 @@ const MODES = [
   { type: 'TAKEAWAY', label: 'Takeaway / Pickup', hint: 'Collect at counter', icon: ShoppingBag },
 ];
 
+const PENDING_PAYMENT_KEY = 'pet-pooja-pending-payment';
+let razorpaySdkPromise;
+
+function loadRazorpaySdk() {
+  if (window.Razorpay) return Promise.resolve();
+  if (razorpaySdkPromise) return razorpaySdkPromise;
+
+  razorpaySdkPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => {
+      if (window.Razorpay) resolve();
+      else {
+        razorpaySdkPromise = null;
+        reject(new Error('Razorpay checkout loaded without its payment SDK.'));
+      }
+    };
+    script.onerror = () => {
+      razorpaySdkPromise = null;
+      reject(new Error('Razorpay checkout could not load. Check your internet connection.'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return razorpaySdkPromise;
+}
+
 export default function PaymentCheckoutPage() {
   const navigate = useNavigate();
+  const [pendingVerification, setPendingVerification] = useState(null);
   const cart = useCartStore((s) => s.cart);
   const orderType = useCartStore((s) => s.orderType);
   const tableNumber = useCartStore((s) => s.tableNumber);
@@ -59,6 +88,26 @@ export default function PaymentCheckoutPage() {
     }
   }, [user, hostelBlock, setHostel]);
 
+  useEffect(() => {
+    const saved = sessionStorage.getItem(PENDING_PAYMENT_KEY);
+    if (!saved) return;
+    try {
+      const payment = JSON.parse(saved);
+      if (
+        typeof payment.razorpay_order_id === 'string' &&
+        typeof payment.razorpay_payment_id === 'string' &&
+        typeof payment.razorpay_signature === 'string'
+      ) {
+        setPendingVerification(payment);
+      } else {
+        sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+      }
+    } catch (loadError) {
+      console.warn('Could not restore the pending payment verification:', loadError);
+      sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+    }
+  }, []);
+
   const handleCheckout = async () => {
     if (!user) {
       toast.info('Please log in to place your order. Your items are saved.');
@@ -79,6 +128,25 @@ export default function PaymentCheckoutPage() {
     await handleRazorpayPayment();
   };
 
+  const verifyPaidOrder = async (response) => {
+    useCartStore.setState({ isPlacing: true, error: null });
+    try {
+      const verify = await api.post('/payments/verify', {
+        razorpayOrderId: response.razorpay_order_id,
+        razorpayPaymentId: response.razorpay_payment_id,
+        razorpaySignature: response.razorpay_signature,
+      });
+      sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+      setPendingVerification(null);
+      useCartStore.setState({ cart: [], notes: '', isPlacing: false, isOpen: false });
+      toast.success(`Order #${verify.data.orderNumber} placed & paid successfully!`);
+      navigate(`/track/${verify.data.id}`);
+    } catch (err) {
+      useCartStore.setState({ isPlacing: false, error: err.message });
+      toast.error(err.message || 'Payment verification failed. Retry verification before paying again.');
+    }
+  };
+
   const handleRazorpayPayment = async () => {
     if (!razorpayKeyId) {
       toast.error('Online payment is not configured. Please contact the canteen.');
@@ -86,6 +154,14 @@ export default function PaymentCheckoutPage() {
     }
 
     useCartStore.setState({ isPlacing: true, error: null });
+    try {
+      await loadRazorpaySdk();
+    } catch (sdkError) {
+      useCartStore.setState({ isPlacing: false, error: sdkError.message });
+      toast.error(sdkError.message);
+      return;
+    }
+
     let rzpOrderData;
     try {
       const res = await api.post('/payments/create-order', {
@@ -109,42 +185,48 @@ export default function PaymentCheckoutPage() {
       name: 'Pet Pooja',
       description: 'Canteen Order Payment',
       order_id: rzpOrderData.razorpayOrderId,
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: 'Pay by UPI · QR or UPI app',
+              instruments: [{ method: 'upi', flows: ['qr', 'intent'] }],
+            },
+          },
+          hide: [{ method: 'upi' }],
+          sequence: ['block.upi'],
+          preferences: { show_default_blocks: true },
+        },
+      },
       prefill: { name: user?.fullName || '', contact: user?.phone || '' },
       theme: { color: '#EF4444' },
       handler: async (response) => {
-        useCartStore.setState({ isPlacing: true });
+        setPendingVerification(response);
         try {
-          const verify = await api.post('/payments/verify', {
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-            orderType,
-            tableNumber: orderType === 'DINE_IN' ? tableNumber.trim() : undefined,
-            hostelBlock: orderType === 'HOSTEL_DELIVERY' ? hostelBlock : undefined,
-            roomNumber: orderType === 'HOSTEL_DELIVERY' ? roomNumber.trim() : undefined,
-            notes,
-            items: cart.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
-          });
-          useCartStore.setState({ cart: [], notes: '', isPlacing: false, isOpen: false });
-          toast.success(`Order #${verify.data.orderNumber} placed & paid successfully!`);
-          navigate(`/track/${verify.data.id}`);
-        } catch (err) {
-          useCartStore.setState({ isPlacing: false, error: err.message });
-          toast.error(err.message || 'Payment verification failed.');
+          sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(response));
+        } catch (storageError) {
+          console.warn('Could not save payment verification for retry:', storageError);
         }
+        await verifyPaidOrder(response);
       },
       modal: {
         ondismiss: () => useCartStore.setState({ isPlacing: false }),
       },
     };
 
-    if (typeof window.Razorpay === 'undefined') {
-      useCartStore.setState({ isPlacing: false });
-      toast.error('Razorpay SDK failed to load. Check your internet connection.');
-      return;
-    }
     try {
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', ({ error: paymentError }) => {
+        const message = paymentError?.description || 'Payment was not completed. No order was placed.';
+        console.error('Razorpay payment failed:', {
+          code: paymentError?.code,
+          description: paymentError?.description,
+          reason: paymentError?.reason,
+          step: paymentError?.step,
+        });
+        useCartStore.setState({ isPlacing: false, error: message });
+        toast.error(message);
+      });
       rzp.open();
     } catch (err) {
       useCartStore.setState({ isPlacing: false, error: err.message });
@@ -367,11 +449,14 @@ export default function PaymentCheckoutPage() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 text-sm font-bold">
-                  UPI, cards, or netbanking
+                  UPI QR / app, cards, or netbanking
                   <CheckCircle2 size={16} className="shrink-0 text-brand-600" />
                 </p>
+                <p className="mt-1 text-xs font-semibold text-ink-700 dark:text-ink-200">
+                  Merchant UPI ID: hayaarav@fam
+                </p>
                 <p className="mt-1 text-xs text-ink-500 dark:text-ink-300">
-                  Payments are processed securely by Razorpay. The kitchen receives your order only after payment is verified.
+                  Pay only using the unique QR or UPI app option shown in Razorpay Checkout. Razorpay verifies each payment before the kitchen receives the order; sending money directly to the UPI ID will not place an order.
                 </p>
                 {!razorpayKeyId && (
                   <p role="alert" className="mt-2 text-xs font-semibold text-chili-600 dark:text-red-300">
@@ -394,6 +479,25 @@ export default function PaymentCheckoutPage() {
               </p>
             )}
 
+            {pendingVerification && (
+              <div role="alert" className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-200">
+                  Payment submitted; order confirmation is pending.
+                </p>
+                <p className="mt-1 text-xs text-ink-600 dark:text-ink-300">
+                  Do not pay again. Retry the secure verification to confirm your order.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => verifyPaidOrder(pendingVerification)}
+                  disabled={isPlacing}
+                  className="btn-primary mt-3 w-full"
+                >
+                  {isPlacing ? 'Verifying payment…' : 'Retry payment verification'}
+                </button>
+              </div>
+            )}
+
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between text-ink-600 dark:text-ink-300">
                 <dt>Items Subtotal ({count})</dt>
@@ -411,10 +515,12 @@ export default function PaymentCheckoutPage() {
 
             <button
               onClick={handleCheckout}
-              disabled={isPlacing || !razorpayKeyId}
+              disabled={isPlacing || Boolean(pendingVerification) || !razorpayKeyId}
               className="btn-primary mt-5 w-full !py-4 text-base font-black shadow-lg shadow-brand-500/25 active:scale-95"
             >
-              {isPlacing
+              {pendingVerification
+                ? 'Payment submitted · retry verification above'
+                : isPlacing
                 ? 'Verifying payment…'
                 : user
                   ? `Pay securely · ${rupees(grandTotal)}`

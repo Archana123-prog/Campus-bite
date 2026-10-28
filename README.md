@@ -33,7 +33,7 @@ campusbite/
 |---|---|---|
 | `VITE_API_URL` | production only | Backend URL, e.g. `https://pet-pooja-api.onrender.com`. **Leave empty in development** (Vite proxies to `localhost:5000`). |
 
-All orders require online payment through Razorpay (UPI, cards, or netbanking). The backend creates the order only after it verifies the Razorpay signature and confirms the payment is captured for the expected amount. Never put `RAZORPAY_KEY_SECRET` in the frontend environment.
+All orders require online payment through Razorpay (UPI, cards, or netbanking). UPI checkout prioritizes Razorpay's per-order QR/UPI app flow; the merchant UPI ID shown in checkout must match the Razorpay account configured in the Dashboard. Do not use a static QR or a direct UPI transfer for an order: those payments cannot be matched and verified by this app. The backend creates the order only after it verifies the Razorpay signature and confirms the payment is captured for the expected amount. Never put `RAZORPAY_KEY_SECRET` in the frontend environment.
 
 ## 2. Run it
 
