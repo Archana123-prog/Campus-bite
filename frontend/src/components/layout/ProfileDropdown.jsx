@@ -118,7 +118,7 @@ export default function ProfileDropdown() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-extrabold text-ink-900 dark:text-white">
-                  {user.fullName || user.email || 'CampusBite Member'}
+                  {user.fullName || user.email || 'Pet Pooja Member'}
                 </p>
                 <p className="truncate text-[11px] text-ink-500 dark:text-ink-300">
                   {user.email}

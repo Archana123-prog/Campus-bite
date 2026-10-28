@@ -5,7 +5,6 @@ import {
   getOrderById,
   updateOrderStatus,
   cancelOrder,
-  markPaid,
 } from '../controllers/order.controller.js';
 import { authenticate, authorize } from '../middlewares/auth.middleware.js';
 
@@ -17,6 +16,5 @@ router.get('/', getOrders);
 router.get('/:id', getOrderById);
 router.patch('/:id/cancel', cancelOrder);
 router.patch('/:id/status', authorize('ADMIN'), updateOrderStatus);
-router.patch('/:id/payment', authorize('ADMIN'), markPaid);
 
 export default router;

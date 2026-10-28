@@ -12,7 +12,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('[CampusBite ErrorBoundary caught error]:', error, errorInfo);
+    console.error('[Pet Pooja ErrorBoundary caught error]:', error, errorInfo);
   }
 
   handleReload = () => {

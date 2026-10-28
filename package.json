@@ -1,8 +1,8 @@
 {
-  "name": "campusbite",
+  "name": "pet-pooja",
   "version": "1.0.0",
   "private": true,
-  "description": "CampusBite - College canteen ordering & hostel delivery system",
+  "description": "Pet Pooja - College canteen ordering & hostel delivery system",
   "scripts": {
     "dev": "npm --prefix backend run dev",
     "dev:backend": "npm --prefix backend run dev",

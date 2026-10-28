@@ -8,7 +8,7 @@ const makeUrl = (base, table) => `${base.replace(/\/$/, '')}/menu?orderType=DINE
 function Sticker({ table, base, size = 180 }) {
   return (
     <div className="print-sticker flex w-64 flex-col items-center rounded-3xl bg-ink-900 p-5 text-center text-white">
-      <p className="text-xs font-semibold text-brand-300">CampusBite canteen</p>
+      <p className="text-xs font-semibold text-brand-300">Pet Pooja canteen</p>
       <p className="font-display text-4xl font-extrabold">Table {table}</p>
       <div className="my-3 rounded-2xl bg-white p-3">
         <QRCodeSVG value={makeUrl(base, table)} size={size} level="H" />
@@ -42,7 +42,7 @@ export default function TableQRGenerator() {
       ctx.textAlign = 'center';
       ctx.fillStyle = '#FDC456';
       ctx.font = '600 44px sans-serif';
-      ctx.fillText('CampusBite canteen', 500, 110);
+      ctx.fillText('Pet Pooja canteen', 500, 110);
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '800 110px sans-serif';
       ctx.fillText(`Table ${table}`, 500, 240);

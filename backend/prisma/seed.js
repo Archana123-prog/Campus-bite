@@ -58,7 +58,7 @@ async function upsertUser({ fullName, email, password, role, phone }) {
 }
 
 async function main() {
-  console.log('🌱 Seeding CampusBite...');
+  console.log('🌱 Seeding Pet Pooja...');
 
   const admin = await upsertUser({
     fullName: process.env.ADMIN_NAME || 'Canteen Admin',

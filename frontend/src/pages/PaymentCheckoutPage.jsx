@@ -11,13 +11,11 @@ import {
   ArrowLeft,
   ShieldCheck,
   CheckCircle2,
-  QrCode
 } from 'lucide-react';
 import { useCartStore, selectSubtotal, selectCount, deliveryFeeFor } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useConfigStore } from '../store/useConfigStore';
 import FoodImage from '../components/ui/FoodImage';
-import UpiPaymentCard from '../components/payment/UpiPaymentCard';
 import { toast } from '../store/useToastStore';
 import { rupees } from '../utils/format';
 import { api } from '../services/api';
@@ -35,20 +33,16 @@ export default function PaymentCheckoutPage() {
   const tableNumber = useCartStore((s) => s.tableNumber);
   const hostelBlock = useCartStore((s) => s.hostelBlock);
   const roomNumber = useCartStore((s) => s.roomNumber);
-  const paymentMethod = useCartStore((s) => s.paymentMethod);
   const notes = useCartStore((s) => s.notes);
   const isPlacing = useCartStore((s) => s.isPlacing);
   const error = useCartStore((s) => s.error);
-  const [utrNumber, setUtrNumber] = useState('');
 
   const setOrderType = useCartStore((s) => s.setOrderType);
   const setTableNumber = useCartStore((s) => s.setTableNumber);
   const setHostel = useCartStore((s) => s.setHostel);
-  const setPaymentMethod = useCartStore((s) => s.setPaymentMethod);
   const setNotes = useCartStore((s) => s.setNotes);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
-  const placeOrder = useCartStore((s) => s.placeOrder);
 
   const subtotal = useCartStore(selectSubtotal);
   const count = useCartStore(selectCount);
@@ -82,33 +76,12 @@ export default function PaymentCheckoutPage() {
       return;
     }
 
-    // Razorpay flow if online payment chosen
-    if (paymentMethod === 'RAZORPAY') {
-      await handleRazorpayPayment();
-      return;
-    }
-
-    // Standard cash/UPI flow - append UTR reference if student entered one
-    if (paymentMethod === 'UPI' && utrNumber.trim()) {
-      const currentNotes = useCartStore.getState().notes || '';
-      const updatedNotes = currentNotes.trim()
-        ? `${currentNotes.trim()} [UPI UTR: ${utrNumber.trim()}]`
-        : `UPI UTR: ${utrNumber.trim()}`;
-      useCartStore.setState({ notes: updatedNotes });
-    }
-
-    const result = await placeOrder();
-    if (result.ok) {
-      toast.success(`Order #${result.order.orderNumber} placed successfully!`);
-      navigate(`/track/${result.order.id}`);
-    } else {
-      toast.error(result.error || 'Failed to place order.');
-    }
+    await handleRazorpayPayment();
   };
 
   const handleRazorpayPayment = async () => {
     if (!razorpayKeyId) {
-      toast.error('Online payment is not configured. Please choose Cash or UPI.');
+      toast.error('Online payment is not configured. Please contact the canteen.');
       return;
     }
 
@@ -129,13 +102,11 @@ export default function PaymentCheckoutPage() {
       toast.error(err.message || 'Payment initiation failed.');
       return;
     }
-    useCartStore.setState({ isPlacing: false });
-
     const options = {
       key: rzpOrderData.keyId,
       amount: rzpOrderData.amount,
       currency: rzpOrderData.currency,
-      name: 'CampusBite',
+      name: 'Pet Pooja',
       description: 'Canteen Order Payment',
       order_id: rzpOrderData.razorpayOrderId,
       prefill: { name: user?.fullName || '', contact: user?.phone || '' },
@@ -168,11 +139,17 @@ export default function PaymentCheckoutPage() {
     };
 
     if (typeof window.Razorpay === 'undefined') {
+      useCartStore.setState({ isPlacing: false });
       toast.error('Razorpay SDK failed to load. Check your internet connection.');
       return;
     }
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+    try {
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      useCartStore.setState({ isPlacing: false, error: err.message });
+      toast.error(err.message || 'Could not open secure payment checkout.');
+    }
   };
 
   if (cart.length === 0) {
@@ -375,74 +352,34 @@ export default function PaymentCheckoutPage() {
           </section>
         </div>
 
-        {/* Right column: Payment method & Grand Total */}
+        {/* Right column: Online payment & Grand Total */}
         <div className="space-y-6">
-          {/* Payment Method Selector */}
           <section className="card p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-display text-base font-bold">Choose Payment Method</h2>
+              <h2 className="font-display text-base font-bold">Online Payment</h2>
               <span className="text-[11px] font-bold text-brand-600 dark:text-brand-400">
-                Online UPI Scanner Active
+                Secure checkout
               </span>
             </div>
-            <div className="space-y-2.5">
-              {[
-                {
-                  id: 'UPI',
-                  label: 'Online Payment (UPI Scanner)',
-                  hint: 'Scan QR with GPay / PhonePe / Paytm / BHIM',
-                  icon: QrCode,
-                  badge: 'Recommended',
-                },
-                ...(razorpayKeyId
-                  ? [{ id: 'RAZORPAY', label: 'Cards / Netbanking (Razorpay)', hint: 'Credit/Debit Cards, Netbanking', icon: CreditCard }]
-                  : []),
-              ].map(({ id, label, hint, icon: Icon, badge }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setPaymentMethod(id)}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition ${
-                    paymentMethod === id
-                      ? 'border-brand-500 bg-brand-50/60'
-                      : 'border-ink-100 hover:border-ink-200'
-                  }`}
-                >
-                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                    paymentMethod === id
-                      ? 'bg-brand-500 text-ink-950 font-bold'
-                      : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'
-                  }`}>
-                    <Icon size={20} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold leading-tight">{label}</p>
-                      {badge && (
-                        <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-extrabold text-brand-700">
-                          {badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-ink-400 dark:text-ink-300">{hint}</p>
-                  </div>
-                  {paymentMethod === id && (
-                    <CheckCircle2 size={18} className="text-brand-600 shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Display Canteen Scanner directly when UPI Online is selected */}
-            {paymentMethod === 'UPI' && (
-              <div className="mt-4">
-                <UpiPaymentCard
-                  amount={grandTotal}
-                  utrNumber={utrNumber}
-                  onUtrChange={setUtrNumber}
-                />
+            <div className="flex items-start gap-3 rounded-xl border-2 border-brand-500 bg-brand-50/60 p-3 dark:bg-brand-500/10">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-500 text-ink-950">
+                <CreditCard size={20} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2 text-sm font-bold">
+                  UPI, cards, or netbanking
+                  <CheckCircle2 size={16} className="shrink-0 text-brand-600" />
+                </p>
+                <p className="mt-1 text-xs text-ink-500 dark:text-ink-300">
+                  Payments are processed securely by Razorpay. The kitchen receives your order only after payment is verified.
+                </p>
+                {!razorpayKeyId && (
+                  <p role="alert" className="mt-2 text-xs font-semibold text-chili-600 dark:text-red-300">
+                    Online payment is not configured. Please contact the canteen; orders cannot be placed right now.
+                  </p>
+                )}
               </div>
-            )}
+            </div>
           </section>
 
           {/* Order Summary & Pay Button */}
@@ -474,21 +411,19 @@ export default function PaymentCheckoutPage() {
 
             <button
               onClick={handleCheckout}
-              disabled={isPlacing}
+              disabled={isPlacing || !razorpayKeyId}
               className="btn-primary mt-5 w-full !py-4 text-base font-black shadow-lg shadow-brand-500/25 active:scale-95"
             >
-              {isPlacing ? (
-                'Processing Order…'
-              ) : user ? (
-                `Confirm & Place Order • ${rupees(grandTotal)}`
-              ) : (
-                'Log in to Place Order'
-              )}
+              {isPlacing
+                ? 'Verifying payment…'
+                : user
+                  ? `Pay securely · ${rupees(grandTotal)}`
+                  : 'Log in to pay'}
             </button>
 
             <p className="mt-3 text-center text-[11px] text-ink-400 dark:text-ink-300 flex items-center justify-center gap-1">
               <ShieldCheck size={13} className="text-leaf-600" />
-              Direct kitchen confirmation & live order tracking
+              Order confirmation follows successful payment verification
             </p>
           </section>
         </div>

@@ -14,19 +14,53 @@ export const getStats = asyncHandler(async (_req, res) => {
   const [todayAgg, todayCount, activeCount, byType, topRaw] = await Promise.all([
     prisma.order.aggregate({
       _sum: { totalAmount: true },
-      where: { createdAt: { gte: startOfDay }, status: { not: 'CANCELLED' } },
+      where: {
+        createdAt: { gte: startOfDay },
+        status: { not: 'CANCELLED' },
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: { not: null },
+        paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+      },
     }),
-    prisma.order.count({ where: { createdAt: { gte: startOfDay } } }),
-    prisma.order.count({ where: { status: { notIn: ['SERVED', 'CANCELLED'] } } }),
+    prisma.order.count({
+      where: {
+        createdAt: { gte: startOfDay },
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: { not: null },
+        paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+      },
+    }),
+    prisma.order.count({
+      where: {
+        status: { notIn: ['SERVED', 'CANCELLED'] },
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: { not: null },
+        paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+      },
+    }),
     prisma.order.groupBy({
       by: ['orderType'],
       _count: { _all: true },
-      where: { createdAt: { gte: startOfDay }, status: { not: 'CANCELLED' } },
+      where: {
+        createdAt: { gte: startOfDay },
+        status: { not: 'CANCELLED' },
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: { not: null },
+        paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+      },
     }),
     prisma.orderItem.groupBy({
       by: ['menuItemId'],
       _sum: { quantity: true },
-      where: { order: { createdAt: { gte: weekAgo }, status: { not: 'CANCELLED' } } },
+      where: {
+        order: {
+          createdAt: { gte: weekAgo },
+          status: { not: 'CANCELLED' },
+          paymentStatus: 'COMPLETED',
+          paymentVerifiedAt: { not: null },
+          paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+        },
+      },
       orderBy: { _sum: { quantity: 'desc' } },
       take: 5,
     }),

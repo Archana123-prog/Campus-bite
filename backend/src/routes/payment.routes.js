@@ -8,14 +8,13 @@ router.use(authenticate); // Both endpoints require a logged-in user
 /**
  * POST /api/v1/payments/create-order
  * Creates a Razorpay order (does NOT save a canteen Order yet).
- * Returns { razorpayOrderId, amount, currency, keyId, subtotal, deliveryFee, totalAmount }
+ * Returns the provider order ID, amount, currency, and public key ID.
  */
 router.post('/create-order', createPaymentOrder);
 
 /**
  * POST /api/v1/payments/verify
- * Verifies Razorpay signature & creates the canteen Order with paymentStatus=COMPLETED.
- * Returns the full Order object (same shape as POST /orders).
+ * Verifies captured payment with Razorpay and creates the canteen order.
  */
 router.post('/verify', verifyPayment);
 

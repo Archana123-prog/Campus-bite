@@ -41,7 +41,7 @@ app.use(
 );
 app.use(express.json({ limit: '100kb' }));
 
-app.get('/', (_req, res) => res.json({ name: 'CampusBite API', status: 'ok' }));
+app.get('/', (_req, res) => res.json({ name: 'Pet Pooja API', status: 'ok' }));
 app.get('/api/v1/health', (_req, res) => res.json({ success: true, status: 'ok', time: new Date().toISOString() }));
 app.get('/api/v1/config', getConfig);
 

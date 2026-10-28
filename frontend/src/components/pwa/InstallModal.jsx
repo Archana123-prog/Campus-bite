@@ -52,7 +52,7 @@ export default function InstallModal() {
             <div className="flex items-center gap-4">
               <img
                 src="/pwa-192x192.png"
-                alt="CampusBite App Icon"
+                alt="Pet Pooja app icon"
                 className="h-16 w-16 rounded-2xl shadow-md ring-2 ring-brand-500/20 object-cover"
               />
               <div>
@@ -60,7 +60,7 @@ export default function InstallModal() {
                   <Smartphone size={12} /> Standalone Web App
                 </span>
                 <h3 className="mt-1 font-display text-xl font-extrabold tracking-tight">
-                  Install CampusBite
+                  Install Pet Pooja
                 </h3>
                 <p className="text-xs text-ink-500 dark:text-ink-300">
                   Full-screen experience with no address bar
@@ -91,7 +91,7 @@ export default function InstallModal() {
                 className="btn-primary w-full !py-3 text-sm font-bold shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2"
               >
                 <Download size={16} />
-                {isInstallable ? 'Install CampusBite Now' : 'Trigger Install Dialog'}
+                {isInstallable ? 'Install Pet Pooja Now' : 'Trigger Install Dialog'}
               </button>
 
               {/* Platform specific instructions if prompt is not native */}
@@ -124,11 +124,11 @@ export default function InstallModal() {
                         Desktop Chrome / Edge 1-Click Install:
                       </p>
                       <p className="text-ink-600 dark:text-ink-300 leading-relaxed">
-                        Look at the right end of your browser's address bar (beside the star/bookmark icon) and click the <strong>Install App icon (⊕ or 💻)</strong>, or click the browser menu <strong>⋮ ➔ "Install CampusBite"</strong>.
+                        Look at the right end of your browser's address bar (beside the star/bookmark icon) and click the <strong>Install App icon (⊕ or 💻)</strong>, or click the browser menu <strong>⋮ ➔ "Install Pet Pooja"</strong>.
                       </p>
                       {attempted && !isInstallable && (
                         <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
-                          <AlertCircle size={13} /> If already installed, open CampusBite from your desktop shortcut or chrome://apps
+                          <AlertCircle size={13} /> If already installed, open Pet Pooja from your desktop shortcut or chrome://apps
                         </p>
                       )}
                     </div>

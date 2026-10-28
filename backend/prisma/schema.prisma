@@ -38,6 +38,12 @@ enum PaymentStatus {
 enum PaymentMethod {
   CASH
   UPI
+  RAZORPAY
+}
+
+enum PaymentIntentStatus {
+  PENDING
+  COMPLETED
 }
 
 model User {
@@ -54,6 +60,7 @@ model User {
 
   orders     Order[] @relation("CustomerOrders")
   deliveries Order[] @relation("RunnerOrders")
+  paymentIntents PaymentIntent[]
 
   @@map("users")
 }
@@ -103,7 +110,8 @@ model Order {
   totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
-  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
+  paymentMethod PaymentMethod @default(RAZORPAY) @map("payment_method")
+  paymentVerifiedAt DateTime? @map("payment_verified_at")
   notes         String?
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
@@ -111,11 +119,32 @@ model Order {
   user       User?       @relation("CustomerOrders", fields: [userId], references: [id], onDelete: SetNull)
   runner     User?       @relation("RunnerOrders", fields: [runnerId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
+  paymentIntent PaymentIntent?
 
   @@index([status, createdAt])
   @@index([userId])
   @@index([runnerId])
   @@map("orders")
+}
+
+model PaymentIntent {
+  id                String              @id @default(uuid())
+  userId            String              @map("user_id")
+  razorpayOrderId   String              @unique @map("razorpay_order_id")
+  razorpayPaymentId String?             @unique @map("razorpay_payment_id")
+  amount            Int
+  currency          String              @default("INR")
+  orderData         Json                @map("order_data")
+  status            PaymentIntentStatus @default(PENDING)
+  orderId           String?             @unique @map("order_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("payment_intents")
 }
 
 model OrderItem {

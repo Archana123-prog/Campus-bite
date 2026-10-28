@@ -1,14 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Minus, Trash2, Bike, Armchair, ShoppingBag, ShoppingCart, CreditCard, QrCode } from 'lucide-react';
+import { X, Plus, Minus, Trash2, Bike, Armchair, ShoppingBag, ShoppingCart, CreditCard } from 'lucide-react';
 import { useCartStore, selectSubtotal, selectCount } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useConfigStore } from '../../store/useConfigStore';
 import FoodImage from '../ui/FoodImage';
-import UpiScannerModal from '../payment/UpiScannerModal';
-import { toast } from '../../store/useToastStore';
 import { rupees } from '../../utils/format';
-import { api } from '../../services/api';
 
 const MODES = [
   { type: 'HOSTEL_DELIVERY', label: 'Hostel', icon: Bike },
@@ -21,9 +18,8 @@ export default function CartDrawer() {
   const s = useCartStore();
   const subtotal = useCartStore(selectSubtotal);
   const count = useCartStore(selectCount);
-  const user = useAuthStore((st) => st.user);
-  const { hostelBlocks, deliveryFee, razorpayKeyId } = useConfigStore();
-  const [showScannerModal, setShowScannerModal] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const { hostelBlocks, deliveryFee } = useConfigStore();
 
   const fee = s.orderType === 'HOSTEL_DELIVERY' ? deliveryFee : 0;
   const total = subtotal + fee;
@@ -48,104 +44,9 @@ export default function CartDrawer() {
 
   if (!s.isOpen) return null;
 
-  const checkout = async () => {
-    if (!user) {
-      s.closeCart();
-      toast.info('Log in to place your order. Your cart is saved.');
-      navigate('/login', { state: { from: '/menu', openCart: true } });
-      return;
-    }
-
-    // Razorpay pre-payment flow
-    if (s.paymentMethod === 'RAZORPAY') {
-      await handleRazorpayCheckout();
-      return;
-    }
-
-    // Standard pay-on-handover flow
-    const result = await s.placeOrder();
-    if (result.ok) {
-      toast.success(`Order #${result.order.orderNumber} placed!`);
-      navigate(`/track/${result.order.id}`);
-    }
-  };
-
-  const handleRazorpayCheckout = async () => {
-    if (!razorpayKeyId) {
-      toast.error('Online payment is not configured. Please choose Cash or UPI.');
-      return;
-    }
-    // Validate delivery details before calling backend
-    if (s.orderType === 'DINE_IN' && !s.tableNumber.trim()) {
-      s.setError && s.setError('Enter your table number.');
-      return;
-    }
-    if (s.orderType === 'HOSTEL_DELIVERY' && (!s.hostelBlock || !s.roomNumber.trim())) {
-      s.setError && s.setError('Select your hostel block and enter your room number.');
-      return;
-    }
-
-    useCartStore.setState({ isPlacing: true, error: null });
-    let rzpOrderData;
-    try {
-      const res = await api.post('/payments/create-order', {
-        orderType: s.orderType,
-        tableNumber: s.orderType === 'DINE_IN' ? s.tableNumber.trim() : undefined,
-        hostelBlock: s.orderType === 'HOSTEL_DELIVERY' ? s.hostelBlock : undefined,
-        roomNumber: s.orderType === 'HOSTEL_DELIVERY' ? s.roomNumber.trim() : undefined,
-        notes: s.notes,
-        items: s.cart.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
-      });
-      rzpOrderData = res.data;
-    } catch (err) {
-      useCartStore.setState({ isPlacing: false, error: err.message });
-      return;
-    }
-    useCartStore.setState({ isPlacing: false });
-
-    // Open Razorpay checkout
-    const options = {
-      key: rzpOrderData.keyId,
-      amount: rzpOrderData.amount,
-      currency: rzpOrderData.currency,
-      name: 'CampusBite',
-      description: 'Canteen order',
-      order_id: rzpOrderData.razorpayOrderId,
-      prefill: { name: user.fullName, contact: user.phone },
-      theme: { color: '#EF4444' },
-      handler: async (response) => {
-        useCartStore.setState({ isPlacing: true });
-        try {
-          const verify = await api.post('/payments/verify', {
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-            orderType: s.orderType,
-            tableNumber: s.orderType === 'DINE_IN' ? s.tableNumber.trim() : undefined,
-            hostelBlock: s.orderType === 'HOSTEL_DELIVERY' ? s.hostelBlock : undefined,
-            roomNumber: s.orderType === 'HOSTEL_DELIVERY' ? s.roomNumber.trim() : undefined,
-            notes: s.notes,
-            items: s.cart.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
-          });
-          useCartStore.setState({ cart: [], notes: '', isPlacing: false, isOpen: false });
-          toast.success(`Order #${verify.data.orderNumber} placed & paid!`);
-          navigate(`/track/${verify.data.id}`);
-        } catch (err) {
-          useCartStore.setState({ isPlacing: false, error: err.message });
-          toast.error(err.message);
-        }
-      },
-      modal: {
-        ondismiss: () => useCartStore.setState({ isPlacing: false }),
-      },
-    };
-
-    if (typeof window.Razorpay === 'undefined') {
-      toast.error('Razorpay SDK failed to load. Check your connection and try again.');
-      return;
-    }
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+  const checkout = () => {
+    s.closeCart();
+    navigate('/checkout');
   };
 
   return (
@@ -245,54 +146,14 @@ export default function CartDrawer() {
                 )}
               </section>
 
-              <section>
-                <div className="flex items-center justify-between">
-                  <p className="label">Payment</p>
-                  <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400">Scanner Ready</span>
-                </div>
-                <div className={`grid gap-2 ${razorpayKeyId ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  {[
-                    { id: 'UPI',      label: 'Online UPI', hint: 'Scan Canteen QR',   icon: QrCode    },
-                    ...(razorpayKeyId ? [{ id: 'RAZORPAY', label: 'Razorpay', hint: 'Card / UPI now', icon: CreditCard }] : []),
-                  ].map(({ id, label, hint, icon: Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => s.setPaymentMethod(id)}
-                      aria-pressed={s.paymentMethod === id}
-                      className={`flex items-center gap-2 rounded-xl border-2 p-2.5 text-left transition ${
-                        s.paymentMethod === id
-                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/15'
-                          : 'border-ink-100 dark:border-ink-700'
-                      }`}
-                    >
-                      <Icon size={18} className="text-brand-700 shrink-0" />
-                      <span>
-                        <span className="block text-sm font-bold">{label}</span>
-                        <span className="block text-[11px] text-ink-400 dark:text-ink-300">{hint}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {s.paymentMethod === 'UPI' && (
-                  <div className="mt-2.5 flex items-center justify-between rounded-xl bg-brand-500/10 p-2.5 text-xs font-semibold text-brand-900 dark:text-brand-200 border border-brand-500/20">
-                    <div className="flex items-center gap-2">
-                      <img src="/canteen-scanner.jpg" alt="UPI QR" className="h-8 w-8 rounded-lg object-contain bg-white p-0.5 border border-brand-500/30" />
-                      <div>
-                        <p className="font-bold leading-tight">Archana Kumari (7488325002@upi)</p>
-                        <p className="text-[10px] text-ink-500 dark:text-ink-300">Scan & pay with GPay/PhonePe</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowScannerModal(true)}
-                      className="rounded-lg bg-brand-500 px-2.5 py-1 text-[11px] font-bold text-ink-950 shadow-xs hover:bg-brand-400 transition"
-                    >
-                      View QR
-                    </button>
-                  </div>
-                )}
+              <section className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-3">
+                <p className="flex items-center gap-2 text-sm font-bold">
+                  <CreditCard size={17} className="text-brand-600" />
+                  Secure online payment
+                </p>
+                <p className="mt-1 text-xs text-ink-500 dark:text-ink-300">
+                  Pay by UPI, card, or netbanking at checkout. Your order is placed only after payment is verified.
+                </p>
               </section>
 
               <section>
@@ -311,30 +172,13 @@ export default function CartDrawer() {
               {fee > 0 && <div className="flex justify-between text-ink-500 dark:text-ink-300"><dt>Delivery</dt><dd>{rupees(fee)}</dd></div>}
               <div className="flex justify-between pt-1 text-lg font-extrabold"><dt>Total</dt><dd>{rupees(total)}</dd></div>
             </dl>
-            <button onClick={checkout} disabled={s.isPlacing} className="btn-primary mt-3 w-full !py-3.5 text-base font-extrabold shadow-md">
-              {s.isPlacing ? 'Placing order…' : user ? `Place order · ${rupees(total)}` : 'Log in to order'}
-            </button>
-            <button
-              onClick={() => {
-                s.closeCart();
-                navigate('/checkout');
-              }}
-              className="btn-ghost mt-2 w-full !py-2 text-xs font-bold"
-            >
-              Open Full Payment Page →
+            <button onClick={checkout} className="btn-primary mt-3 w-full !py-3.5 text-base font-extrabold shadow-md">
+              Continue to payment · {rupees(total)}
             </button>
           </footer>
         )}
       </aside>
 
-      {showScannerModal && (
-        <UpiScannerModal
-          isOpen={showScannerModal}
-          onClose={() => setShowScannerModal(false)}
-          amount={total}
-          showUtrInput={false}
-        />
-      )}
     </div>
   );
 }

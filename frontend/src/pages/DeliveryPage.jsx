@@ -3,7 +3,7 @@ import { MapPin, Phone, Bike, PackageCheck, Clock } from 'lucide-react';
 import { api } from '../services/api';
 import { getSocket, onConnected } from '../services/socket';
 import { toast } from '../store/useToastStore';
-import { rupees, timeAgo } from '../utils/format';
+import { timeAgo } from '../utils/format';
 import Spinner from '../components/ui/Spinner';
 
 function DeliveryCard({ order, children }) {
@@ -19,7 +19,7 @@ function DeliveryCard({ order, children }) {
       </a>
       <p className="mt-2 text-sm text-ink-600 dark:text-ink-300">{order.orderItems.map((i) => `${i.quantity}× ${i.menuItem?.name}`).join(', ')}</p>
       <p className="mt-2 text-sm font-bold">
-        {order.paymentStatus === 'COMPLETED' ? 'Already paid' : `Collect ${rupees(order.totalAmount)} (${order.paymentMethod})`}
+        {order.paymentStatus === 'COMPLETED' ? 'Paid online' : 'Payment not verified'}
       </p>
       <div className="mt-3">{children}</div>
     </article>

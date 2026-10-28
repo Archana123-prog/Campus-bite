@@ -1,4 +1,4 @@
-# CampusBite — College Canteen Ordering & Hostel Delivery
+# Pet Pooja — College Canteen Ordering & Hostel Delivery
 
 Customers (hostelers, day scholars, staff) order from their phone for **hostel delivery**, **dine-in at a table (QR)** or **pickup**.
 The canteen runs everything from a live kitchen board. Delivery runners accept and complete hostel deliveries.
@@ -23,15 +23,17 @@ campusbite/
 | `DELIVERY_FEE` | no | Hostel delivery fee in ₹. Default `10` |
 | `TABLE_COUNT` | no | Number of canteen tables (for printing QR stickers). Default `20` |
 | `HOSTEL_BLOCKS` | no | Comma-separated hostel names shown in the dropdown |
+| `RAZORPAY_KEY_ID` | yes for ordering | Razorpay key ID used to start secure online checkout |
+| `RAZORPAY_KEY_SECRET` | yes for ordering | Razorpay secret used by the server to verify and capture payment |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | no | Admin account created by the seed script |
 | `RUNNER_EMAIL` / `RUNNER_PASSWORD` / `RUNNER_NAME` | no | Delivery-runner account created by the seed script |
 
 ### `frontend/.env`
 | Key | Required | What to put |
 |---|---|---|
-| `VITE_API_URL` | production only | Backend URL, e.g. `https://campusbite-api.onrender.com`. **Leave empty in development** (Vite proxies to `localhost:5000`). |
+| `VITE_API_URL` | production only | Backend URL, e.g. `https://pet-pooja-api.onrender.com`. **Leave empty in development** (Vite proxies to `localhost:5000`). |
 
-No payment-gateway or map keys are needed. Payment is Cash/UPI collected on handover.
+All orders require online payment through Razorpay (UPI, cards, or netbanking). The backend creates the order only after it verifies the Razorpay signature and confirms the payment is captured for the expected amount. Never put `RAZORPAY_KEY_SECRET` in the frontend environment.
 
 ## 2. Run it
 
@@ -65,8 +67,8 @@ Default logins (change them in `backend/.env` before seeding):
 | Admin | `/admin` | Live kitchen board (sound alert), overview stats, menu & stock, table QR stickers, staff accounts |
 | Runner | `/delivery` | Accept ready hostel orders, mark delivered |
 
-Order flow: `PENDING → PREPARING → READY → (OUT_FOR_DELIVERY) → SERVED`, enforced on the server.
-Prices and the delivery fee are always calculated on the server, never trusted from the browser.
+Order flow: `PENDING → PREPARING → READY → (OUT_FOR_DELIVERY) → SERVED`, enforced on the server. Orders are created only by the verified payment endpoint; direct order creation and manually marking orders as paid are disabled. The legacy `CASH` enum remains for database compatibility, but COD is not available, and historical orders without a server-recorded payment verification are excluded from order queues.
+Prices and the delivery fee are always calculated on the server and saved with the pending payment session, never trusted from the browser.
 
 Table QR: Admin → *Table QR*. Set the **public website address** first (not `localhost`), then download a PNG or print all tables.
 
@@ -75,7 +77,8 @@ Table QR: Admin → *Table QR*. Set the **public website address** first (not `l
 - `POST /auth/register`, `POST /auth/login`, `GET|PUT /auth/me`
 - `GET /config`, `GET /menu`, `/menu/featured`, `/menu/categories`, `/menu/:id`
 - `PATCH /menu/:id/toggle-stock`, `/toggle-featured` (admin)
-- `POST /orders`, `GET /orders`, `GET /orders/:id`, `PATCH /orders/:id/cancel`, `/status` (admin), `/payment` (admin)
+- `GET /orders`, `GET /orders/:id`, `PATCH /orders/:id/cancel`, `/status` (admin)
+- `POST /payments/create-order`, `POST /payments/verify` (verified, captured payments create orders)
 - `GET /delivery/queue`, `POST /delivery/:id/accept`, `/complete` (runner/admin)
 - `GET /admin/stats`; `POST|PUT|DELETE /admin/categories`, `/admin/menu-items`; `GET|POST|DELETE /admin/staff`
 
@@ -83,7 +86,7 @@ Socket.io events: `kds_new_order`, `order_updated`, `menu_updated`. Clients join
 
 ## 5. Deploying
 
-- **Backend** (Render / Railway / any Node host): root `backend`, build `npm install`, start `npm start`. Set all env keys. Run `npm run db:push` and `npm run db:seed` once.
+- **Backend** (Render / Railway / any Node host): root `backend`, build `npm install`, start `npm start`. Set all env keys, including both Razorpay keys. Run `npm run db:push` and `npm run db:seed` once; after schema changes, run `npm run db:push` before deploying the backend.
 - **Frontend** (Vercel / Netlify): root `frontend`, build `npm run build`, output `dist`. Set `VITE_API_URL` to the backend URL. Add a rewrite of all paths to `/index.html` (single-page app).
 - Set the backend's `CLIENT_URL` to the deployed frontend URL.
 

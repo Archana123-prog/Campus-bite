@@ -7,12 +7,26 @@ import { ORDER_INCLUDE } from './order.controller.js';
 export const getQueue = asyncHandler(async (req, res) => {
   const [available, mine] = await Promise.all([
     prisma.order.findMany({
-      where: { orderType: 'HOSTEL_DELIVERY', status: 'READY', runnerId: null },
+      where: {
+        orderType: 'HOSTEL_DELIVERY',
+        status: 'READY',
+        runnerId: null,
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: { not: null },
+        paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+      },
       include: ORDER_INCLUDE,
       orderBy: { createdAt: 'asc' },
     }),
     prisma.order.findMany({
-      where: { orderType: 'HOSTEL_DELIVERY', status: 'OUT_FOR_DELIVERY', runnerId: req.user.userId },
+      where: {
+        orderType: 'HOSTEL_DELIVERY',
+        status: 'OUT_FOR_DELIVERY',
+        runnerId: req.user.userId,
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: { not: null },
+        paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+      },
       include: ORDER_INCLUDE,
       orderBy: { createdAt: 'asc' },
     }),
@@ -23,7 +37,15 @@ export const getQueue = asyncHandler(async (req, res) => {
 /** POST /delivery/:id/accept — atomic, so two runners cannot grab the same order */
 export const acceptDelivery = asyncHandler(async (req, res) => {
   const result = await prisma.order.updateMany({
-    where: { id: req.params.id, orderType: 'HOSTEL_DELIVERY', status: 'READY', runnerId: null },
+    where: {
+      id: req.params.id,
+      orderType: 'HOSTEL_DELIVERY',
+      status: 'READY',
+      runnerId: null,
+      paymentStatus: 'COMPLETED',
+      paymentVerifiedAt: { not: null },
+      paymentMethod: { in: ['UPI', 'RAZORPAY'] },
+    },
     data: { runnerId: req.user.userId, status: 'OUT_FOR_DELIVERY' },
   });
   if (result.count === 0) throw new HttpError(409, 'This delivery was already taken or is not ready yet.');
@@ -38,6 +60,13 @@ export const completeDelivery = asyncHandler(async (req, res) => {
   const order = await prisma.order.findUnique({ where: { id: req.params.id } });
   if (!order) throw new HttpError(404, 'Order not found.');
   if (order.status !== 'OUT_FOR_DELIVERY') throw new HttpError(400, 'This order is not out for delivery.');
+  if (
+    order.paymentStatus !== 'COMPLETED' ||
+    !order.paymentVerifiedAt ||
+    !['UPI', 'RAZORPAY'].includes(order.paymentMethod)
+  ) {
+    throw new HttpError(402, 'This delivery cannot be completed because its payment is not verified.');
+  }
   if (req.user.role !== 'ADMIN' && order.runnerId !== req.user.userId) {
     throw new HttpError(403, 'This delivery is assigned to another runner.');
   }
@@ -46,7 +75,6 @@ export const completeDelivery = asyncHandler(async (req, res) => {
     where: { id: order.id },
     data: {
       status: 'SERVED',
-      paymentStatus: order.paymentStatus === 'PENDING' ? 'COMPLETED' : order.paymentStatus,
     },
     include: ORDER_INCLUDE,
   });

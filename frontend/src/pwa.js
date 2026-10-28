@@ -52,7 +52,7 @@ export function registerPwa() {
 
   // App installed event
   window.addEventListener('appinstalled', () => {
-    console.log('[PWA] CampusBite standalone web app installed');
+    console.log('[PWA] Pet Pooja standalone web app installed');
     window.__pwaInstalled = true;
     window.__pwaInstallPrompt = null;
     usePwaStore.getState().setInstalled();

@@ -8,7 +8,7 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 
 httpServer.listen(env.port, async () => {
-  console.log(`🚀 CampusBite API running on http://localhost:${env.port}`);
+  console.log(`🚀 Pet Pooja API running on http://localhost:${env.port}`);
   console.log(`   CORS origin(s): ${env.clientUrls.join(', ')}`);
 
   // ── DB connection check ──────────────────────────────────────────────
@@ -28,4 +28,3 @@ const shutdown = async () => {
 };
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
-

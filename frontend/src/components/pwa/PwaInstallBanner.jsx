@@ -20,19 +20,19 @@ export default function PwaInstallBanner() {
         exit={{ y: 80, opacity: 0 }}
         transition={{ type: 'spring', damping: 20, stiffness: 200 }}
         className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-lg md:left-auto md:right-6 md:bottom-6"
-        aria-label="Install CampusBite Web App"
+        aria-label="Install Pet Pooja Web App"
       >
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-ink-200/80 bg-white/95 p-3.5 shadow-xl backdrop-blur-md dark:border-ink-800 dark:bg-ink-900/95">
           <div className="flex items-center gap-3 min-w-0">
             <img
               src="/pwa-192x192.png"
-              alt="CampusBite Icon"
+              alt="Pet Pooja app icon"
               className="h-11 w-11 shrink-0 rounded-xl shadow ring-1 ring-brand-500/20"
             />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-display text-sm font-bold tracking-tight text-ink-900 dark:text-white truncate">
-                  CampusBite App
+                  Pet Pooja App
                 </span>
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-brand-500/15 px-1.5 py-0.2 text-[10px] font-bold text-brand-600 dark:text-brand-400 shrink-0">
                   <Sparkles size={9} /> Fast

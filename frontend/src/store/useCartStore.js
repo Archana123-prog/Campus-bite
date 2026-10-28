@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { api } from '../services/api';
 import { useConfigStore } from './useConfigStore';
 
 export const selectCount = (s) => s.cart.reduce((n, i) => n + i.quantity, 0);
@@ -14,7 +13,6 @@ export const useCartStore = create(
       tableNumber: '',
       hostelBlock: '',
       roomNumber: '',
-      paymentMethod: 'CASH',
       notes: '',
       isOpen: false,
       isPlacing: false,
@@ -26,7 +24,6 @@ export const useCartStore = create(
       setOrderType: (orderType) => set({ orderType, error: null }),
       setTableNumber: (tableNumber) => set({ tableNumber }),
       setHostel: (hostelBlock, roomNumber) => set({ hostelBlock, roomNumber }),
-      setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
       setNotes: (notes) => set({ notes }),
       setError: (error) => set({ error }),
 
@@ -92,7 +89,6 @@ export const useCartStore = create(
           hostelBlock: order.hostelBlock || '',
           roomNumber: order.roomNumber || '',
           tableNumber: order.tableNumber || '',
-          paymentMethod: order.paymentMethod || 'CASH',
           notes: order.notes || '',
           error: null,
         });
@@ -110,51 +106,25 @@ export const useCartStore = create(
       removeItem: (menuItemId) => set({ cart: get().cart.filter((i) => i.menuItemId !== menuItemId) }),
       clearCart: () => set({ cart: [], notes: '', error: null }),
 
-      /** Returns { ok: true, order } or { ok: false, error } */
-      placeOrder: async () => {
-        const s = get();
-        if (s.cart.length === 0) return fail(set, 'Your cart is empty.');
-        if (s.orderType === 'DINE_IN' && !s.tableNumber.trim()) return fail(set, 'Enter your table number.');
-        if (s.orderType === 'HOSTEL_DELIVERY' && (!s.hostelBlock || !s.roomNumber.trim())) {
-          return fail(set, 'Select your hostel block and enter your room number.');
-        }
-
-        set({ isPlacing: true, error: null });
-        try {
-          const { data } = await api.post('/orders', {
-            orderType: s.orderType,
-            tableNumber: s.orderType === 'DINE_IN' ? s.tableNumber.trim() : undefined,
-            hostelBlock: s.orderType === 'HOSTEL_DELIVERY' ? s.hostelBlock : undefined,
-            roomNumber: s.orderType === 'HOSTEL_DELIVERY' ? s.roomNumber.trim() : undefined,
-            paymentMethod: s.paymentMethod,
-            notes: s.notes,
-            items: s.cart.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
-          });
-          set({ cart: [], notes: '', isPlacing: false, isOpen: false });
-          return { ok: true, order: data };
-        } catch (err) {
-          return fail(set, err.message, { isPlacing: false });
-        }
-      },
     }),
     {
       name: 'campusbite-cart',
+      version: 1,
+      migrate: (persistedState) => {
+        const state = { ...persistedState };
+        delete state.paymentMethod;
+        return state;
+      },
       partialize: (s) => ({
         cart: s.cart,
         orderType: s.orderType,
         tableNumber: s.tableNumber,
         hostelBlock: s.hostelBlock,
         roomNumber: s.roomNumber,
-        paymentMethod: s.paymentMethod,
       }),
     }
   )
 );
-
-function fail(set, error, extra = {}) {
-  set({ error, ...extra });
-  return { ok: false, error };
-}
 
 export const deliveryFeeFor = (orderType) =>
   orderType === 'HOSTEL_DELIVERY' ? useConfigStore.getState().deliveryFee : 0;

@@ -67,20 +67,17 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md shadow-xs dark:border-ink-800 dark:bg-ink-950/90">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         {/* Brand / Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group" aria-label="CampusBite home">
+        <Link to="/" className="flex items-center gap-2.5 group" aria-label="Pet Pooja home">
           <div className="relative">
             <img
-              src="/pwa-192x192.png"
-              alt="CampusBite icon"
-              className="h-9 w-9 rounded-xl shadow-sm ring-1 ring-brand-500/20 object-cover transition group-hover:scale-105"
+              src="/pet-pooja-logo.png"
+              alt="Pet Pooja"
+              className="h-12 w-14 rounded-lg object-contain transition group-hover:scale-105 sm:w-[72px]"
             />
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-leaf-500 ring-2 ring-white dark:ring-ink-950" title="Canteen Open" />
           </div>
-          <div>
-            <span className="font-display text-xl font-black tracking-tight block leading-none">
-              Campus<span className="text-brand-600 dark:text-brand-400">Bite</span>
-            </span>
-            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-300">
+          <div className="hidden sm:block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-300">
               Canteen & Hostels
             </span>
           </div>
@@ -98,7 +95,7 @@ export default function Navbar() {
             <button
               onClick={() => promptInstall()}
               className="hidden lg:inline-flex items-center gap-1.5 rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-600 transition hover:bg-brand-500/20 dark:text-brand-400"
-              title="Install CampusBite as a Standalone App"
+              title="Install Pet Pooja as a Standalone App"
             >
               <Download size={14} /> Install
             </button>

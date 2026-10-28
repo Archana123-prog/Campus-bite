@@ -1,17 +1,3 @@
-/**
- * payment.controller.js
- * Handles Razorpay pre-payment order creation and signature verification.
- *
- * Flow:
- *  1. Customer fills cart → clicks "Pay online" → POST /api/v1/payments/create-order
- *     → backend creates a Razorpay order, returns { razorpayOrderId, amount, currency, keyId }
- *  2. Razorpay checkout opens in the browser (handled on the frontend)
- *  3. On success, frontend calls POST /api/v1/payments/verify with the payment details
- *     → backend verifies HMAC signature, creates the canteen Order with paymentStatus=COMPLETED
- *     → emits kds_new_order via Socket.io
- *  4. On failure the customer can retry or switch to pay-on-handover
- */
-
 import crypto from 'crypto';
 import prisma from '../config/prisma.js';
 import { env } from '../config/env.js';
@@ -19,43 +5,34 @@ import { HttpError, asyncHandler, ok } from '../utils/http.js';
 import { emitNewOrder } from '../services/socket.service.js';
 import { ORDER_INCLUDE } from './order.controller.js';
 
-/** Lazy-load Razorpay only if the key is configured */
 let razorpayInstance = null;
+
 async function getRazorpay() {
   if (!env.razorpayKeyId || !env.razorpayKeySecret) {
-    throw new HttpError(503, 'Online payment is not configured on this server. Please pay on handover.');
+    throw new HttpError(503, 'Online payment is not configured. Please contact the canteen.');
   }
+
   if (!razorpayInstance) {
-    let Razorpay;
-    try {
-      const mod = await import('razorpay');
-      Razorpay = mod.default || mod;
-    } catch {
-      throw new HttpError(503, 'Razorpay package is not installed. Run: npm install razorpay');
-    }
+    const mod = await import('razorpay');
+    const Razorpay = mod.default || mod;
     razorpayInstance = new Razorpay({
       key_id: env.razorpayKeyId,
       key_secret: env.razorpayKeySecret,
     });
   }
+
   return razorpayInstance;
 }
 
 const ORDER_TYPES = ['DINE_IN', 'HOSTEL_DELIVERY', 'TAKEAWAY'];
-const PAYMENT_METHODS = ['CASH', 'UPI'];
 
-/**
- * POST /api/v1/payments/create-order
- * Creates a Razorpay order for the given cart without persisting a canteen Order yet.
- * Body: same shape as POST /orders (orderType, items, tableNumber, hostelBlock, roomNumber, notes)
- */
-export const createPaymentOrder = asyncHandler(async (req, res) => {
-  const { orderType, tableNumber, hostelBlock, roomNumber, items, notes } = req.body;
+async function prepareOrderData(body) {
+  const { orderType, tableNumber, hostelBlock, roomNumber, items, notes } = body;
 
   if (!ORDER_TYPES.includes(orderType)) throw new HttpError(400, 'Please choose how you want to receive your order.');
   if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'Your cart is empty.');
+  if (items.length > 40) throw new HttpError(400, 'Too many different items in one order.');
 
-  // Validate delivery details
   const table = typeof tableNumber === 'string' ? tableNumber.trim() : '';
   const block = typeof hostelBlock === 'string' ? hostelBlock.trim() : '';
   const room = typeof roomNumber === 'string' ? roomNumber.trim() : '';
@@ -65,136 +42,187 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     throw new HttpError(400, 'Please select your hostel block and enter your room number.');
   }
 
-  // Validate & price items server-side
-  const wanted = new Map();
+  const quantities = new Map();
   for (const line of items) {
     const id = line?.menuItemId;
-    const qty = Math.min(20, Math.max(1, parseInt(line?.quantity, 10) || 1));
-    if (typeof id !== 'string') throw new HttpError(400, 'Invalid item in cart.');
-    wanted.set(id, Math.min(20, (wanted.get(id) || 0) + qty));
+    const quantity = Number(line?.quantity);
+    if (typeof id !== 'string' || !Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+      throw new HttpError(400, 'Invalid item in cart.');
+    }
+    const totalQuantity = (quantities.get(id) || 0) + quantity;
+    if (totalQuantity > 20) throw new HttpError(400, 'The quantity for an item cannot exceed 20.');
+    quantities.set(id, totalQuantity);
   }
 
-  const dbItems = await prisma.menuItem.findMany({ where: { id: { in: [...wanted.keys()] } } });
-  if (dbItems.length !== wanted.size) throw new HttpError(400, 'Some items in your cart no longer exist.');
-
-  const soldOut = dbItems.filter((i) => !i.isAvailable);
+  const menuItems = await prisma.menuItem.findMany({ where: { id: { in: [...quantities.keys()] } } });
+  if (menuItems.length !== quantities.size) throw new HttpError(400, 'Some items in your cart no longer exist.');
+  const soldOut = menuItems.filter((item) => !item.isAvailable);
   if (soldOut.length) {
-    throw new HttpError(409, `Sold out: ${soldOut.map((i) => i.name).join(', ')}. Remove from cart and retry.`);
+    throw new HttpError(409, `Sold out: ${soldOut.map((item) => item.name).join(', ')}. Remove from cart and retry.`);
   }
 
-  let subtotal = 0;
-  for (const item of dbItems) {
-    subtotal += Number(item.price) * wanted.get(item.id);
-  }
-  const deliveryFee = orderType === 'HOSTEL_DELIVERY' ? env.deliveryFee : 0;
-  const totalAmount = subtotal + deliveryFee;
+  const subtotalPaise = menuItems.reduce(
+    (subtotal, item) => subtotal + Math.round(Number(item.price) * 100) * quantities.get(item.id),
+    0
+  );
+  const deliveryFeePaise = orderType === 'HOSTEL_DELIVERY' ? Math.round(env.deliveryFee * 100) : 0;
 
-  // Create Razorpay order (amount in paise)
-  const rzp = await getRazorpay();
-  const rzpOrder = await new Promise((resolve, reject) => {
-    rzp.orders.create(
-      { amount: Math.round(totalAmount * 100), currency: 'INR', receipt: `cb_${Date.now()}` },
-      (err, order) => (err ? reject(new HttpError(500, 'Could not create payment order. Try again.')) : resolve(order))
-    );
+  return {
+    orderType,
+    tableNumber: orderType === 'DINE_IN' ? table : null,
+    hostelBlock: orderType === 'HOSTEL_DELIVERY' ? block : null,
+    roomNumber: orderType === 'HOSTEL_DELIVERY' ? room : null,
+    subtotal: subtotalPaise / 100,
+    deliveryFee: deliveryFeePaise / 100,
+    totalAmount: (subtotalPaise + deliveryFeePaise) / 100,
+    items: menuItems.map((item) => ({
+      menuItemId: item.id,
+      quantity: quantities.get(item.id),
+      unitPrice: Math.round(Number(item.price) * 100) / 100,
+    })),
+    notes: typeof notes === 'string' && notes.trim() ? notes.trim().slice(0, 300) : null,
+  };
+}
+
+function verifySignature(orderId, paymentId, signature) {
+  if (typeof signature !== 'string' || !/^[a-f0-9]{64}$/i.test(signature)) return false;
+  const expected = crypto
+    .createHmac('sha256', env.razorpayKeySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest();
+  const received = Buffer.from(signature, 'hex');
+  return received.length === expected.length && crypto.timingSafeEqual(received, expected);
+}
+
+/** POST /api/v1/payments/create-order */
+export const createPaymentOrder = asyncHandler(async (req, res) => {
+  const orderData = await prepareOrderData(req.body);
+  const amount = Math.round(orderData.totalAmount * 100);
+  if (amount < 1) throw new HttpError(400, 'The order amount must be greater than zero.');
+
+  const razorpay = await getRazorpay();
+  const razorpayOrder = await razorpay.orders.create({
+    amount,
+    currency: 'INR',
+    receipt: `cb_${crypto.randomBytes(12).toString('hex')}`,
+  });
+
+  await prisma.paymentIntent.create({
+    data: {
+      userId: req.user.userId,
+      razorpayOrderId: razorpayOrder.id,
+      amount,
+      currency: 'INR',
+      orderData,
+    },
   });
 
   ok(res, {
-    razorpayOrderId: rzpOrder.id,
-    amount: rzpOrder.amount,       // in paise
-    currency: rzpOrder.currency,
+    razorpayOrderId: razorpayOrder.id,
+    amount: razorpayOrder.amount,
+    currency: razorpayOrder.currency,
     keyId: env.razorpayKeyId,
-    // Echo back pricing for the checkout modal
-    subtotal,
-    deliveryFee,
-    totalAmount,
   });
 });
 
-/**
- * POST /api/v1/payments/verify
- * Verifies the Razorpay HMAC signature and — if valid — creates the canteen Order
- * with paymentStatus=COMPLETED.
- *
- * Body:
- *  razorpayOrderId, razorpayPaymentId, razorpaySignature   — from Razorpay handler callback
- *  + the same cart/delivery fields as POST /orders
- */
+/** POST /api/v1/payments/verify */
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const {
-    razorpayOrderId,
-    razorpayPaymentId,
-    razorpaySignature,
-    orderType,
-    tableNumber,
-    hostelBlock,
-    roomNumber,
-    items,
-    notes,
-  } = req.body;
-
-  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+  if (
+    typeof razorpayOrderId !== 'string' ||
+    typeof razorpayPaymentId !== 'string' ||
+    typeof razorpaySignature !== 'string'
+  ) {
     throw new HttpError(400, 'Missing Razorpay payment details.');
   }
 
-  // Verify HMAC-SHA256 signature
-  if (!env.razorpayKeySecret) {
-    throw new HttpError(503, 'Payment verification is not configured on this server.');
-  }
-  const expected = crypto
-    .createHmac('sha256', env.razorpayKeySecret)
-    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-    .digest('hex');
-
-  if (expected !== razorpaySignature) {
-    throw new HttpError(400, 'Payment verification failed. Please contact support if money was deducted.');
+  if (!env.razorpayKeySecret) throw new HttpError(503, 'Payment verification is not configured on this server.');
+  if (!verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
+    throw new HttpError(400, 'Payment signature verification failed.');
   }
 
-  // Signature is valid — now create the canteen Order with COMPLETED payment
-  if (!ORDER_TYPES.includes(orderType)) throw new HttpError(400, 'Invalid order type.');
-  if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'Cart is empty.');
-
-  const table = typeof tableNumber === 'string' ? tableNumber.trim() : '';
-  const block = typeof hostelBlock === 'string' ? hostelBlock.trim() : '';
-  const room = typeof roomNumber === 'string' ? roomNumber.trim() : '';
-
-  const wanted = new Map();
-  for (const line of items) {
-    const id = line?.menuItemId;
-    const qty = Math.min(20, Math.max(1, parseInt(line?.quantity, 10) || 1));
-    if (typeof id !== 'string') throw new HttpError(400, 'Invalid item in cart.');
-    wanted.set(id, Math.min(20, (wanted.get(id) || 0) + qty));
-  }
-
-  const dbItems = await prisma.menuItem.findMany({ where: { id: { in: [...wanted.keys()] } } });
-  if (dbItems.length !== wanted.size) throw new HttpError(400, 'Some items no longer exist.');
-
-  let subtotal = 0;
-  const orderItemsData = dbItems.map((item) => {
-    const quantity = wanted.get(item.id);
-    const unitPrice = Number(item.price);
-    subtotal += unitPrice * quantity;
-    return { menuItemId: item.id, quantity, unitPrice };
+  const intent = await prisma.paymentIntent.findFirst({
+    where: { razorpayOrderId, userId: req.user.userId },
   });
-  const deliveryFee = orderType === 'HOSTEL_DELIVERY' ? env.deliveryFee : 0;
+  if (!intent) throw new HttpError(404, 'Payment session not found for this account.');
 
-  const order = await prisma.order.create({
-    data: {
-      userId: req.user.userId,
-      orderType,
-      tableNumber: orderType === 'DINE_IN' ? table : null,
-      hostelBlock: orderType === 'HOSTEL_DELIVERY' ? block : null,
-      roomNumber: orderType === 'HOSTEL_DELIVERY' ? room : null,
-      subtotal,
-      deliveryFee,
-      totalAmount: subtotal + deliveryFee,
-      paymentMethod: 'UPI',
-      paymentStatus: 'COMPLETED',   // Payment already collected by Razorpay
-      notes: typeof notes === 'string' && notes.trim() ? notes.trim().slice(0, 300) : null,
-      orderItems: { create: orderItemsData },
-    },
-    include: ORDER_INCLUDE,
+  const razorpay = await getRazorpay();
+  let payment = await razorpay.payments.fetch(razorpayPaymentId);
+  if (
+    payment.order_id !== intent.razorpayOrderId ||
+    payment.amount !== intent.amount ||
+    payment.currency !== intent.currency
+  ) {
+    throw new HttpError(400, 'Payment details do not match this order.');
+  }
+
+  if (payment.status === 'authorized') {
+    await razorpay.payments.capture(razorpayPaymentId, intent.amount, intent.currency);
+    payment = await razorpay.payments.fetch(razorpayPaymentId);
+  }
+
+  const razorpayOrder = await razorpay.orders.fetch(intent.razorpayOrderId);
+  if (
+    payment.status !== 'captured' ||
+    payment.captured !== true ||
+    razorpayOrder.amount !== intent.amount ||
+    razorpayOrder.currency !== intent.currency ||
+    razorpayOrder.status !== 'paid' ||
+    razorpayOrder.amount_paid < intent.amount
+  ) {
+    throw new HttpError(402, 'Payment has not been successfully captured. No order was placed.');
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const claimed = await tx.paymentIntent.updateMany({
+      where: { id: intent.id, userId: req.user.userId, status: 'PENDING' },
+      data: { status: 'COMPLETED', razorpayPaymentId },
+    });
+
+    if (claimed.count === 0) {
+      const completedIntent = await tx.paymentIntent.findUnique({ where: { id: intent.id } });
+      if (
+        completedIntent?.status === 'COMPLETED' &&
+        completedIntent.razorpayPaymentId === razorpayPaymentId &&
+        completedIntent.orderId
+      ) {
+        const existingOrder = await tx.order.findUnique({
+          where: { id: completedIntent.orderId },
+          include: ORDER_INCLUDE,
+        });
+        if (existingOrder) return { order: existingOrder, created: false };
+      }
+      throw new HttpError(409, 'This payment session has already been used.');
+    }
+
+    const order = await tx.order.create({
+      data: {
+        userId: req.user.userId,
+        orderType: intent.orderData.orderType,
+        tableNumber: intent.orderData.tableNumber,
+        hostelBlock: intent.orderData.hostelBlock,
+        roomNumber: intent.orderData.roomNumber,
+        subtotal: intent.orderData.subtotal,
+        deliveryFee: intent.orderData.deliveryFee,
+        totalAmount: intent.orderData.totalAmount,
+        paymentMethod: payment.method === 'upi' ? 'UPI' : 'RAZORPAY',
+        paymentStatus: 'COMPLETED',
+        paymentVerifiedAt: new Date(),
+        notes: intent.orderData.notes,
+        orderItems: { create: intent.orderData.items },
+      },
+      include: ORDER_INCLUDE,
+    });
+
+    await tx.paymentIntent.update({ where: { id: intent.id }, data: { orderId: order.id } });
+    return { order, created: true };
   });
 
-  emitNewOrder(order);
-  ok(res, order, { message: 'Payment verified & order placed!' }, 201);
+  if (result.created) emitNewOrder(result.order);
+  ok(
+    res,
+    result.order,
+    { message: 'Payment verified and order placed.' },
+    result.created ? 201 : 200
+  );
 });

@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "CampusBite — College Canteen & Hostel Delivery",
-  "short_name": "CampusBite",
-  "description": "Order from your college canteen to your table or hostel room.",
+  "name": "Pet Pooja — College Canteen & Hostel Delivery",
+  "short_name": "Pet Pooja",
+  "description": "Order from your college canteen to your table or hostel room with Pet Pooja.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

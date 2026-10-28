@@ -9,10 +9,7 @@ export const getConfig = (_req, res) =>
     deliveryFee: env.deliveryFee,
     tableCount: env.tableCount,
     hostelBlocks: env.hostelBlocks,
-    upiId: env.upiId,
-    upiName: env.upiName,
-    upiQrImage: '/canteen-scanner.jpg',
-    razorpayKeyId: env.razorpayKeyId || null,  // null if not configured
+    razorpayKeyId: env.razorpayKeyId || null,
   });
 
 /** GET /menu/featured — powers the home page swipe stack */
