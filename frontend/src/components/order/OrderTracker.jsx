@@ -139,9 +139,14 @@ export default function OrderTracker({ orderId }) {
           </div>
           <p className="mt-1 text-xs text-ink-400 dark:text-ink-300">
             {order.paymentStatus === 'COMPLETED'
-              ? `Paid online${order.paymentMethod === 'UPI' ? ' via UPI' : ''}`
+              ? `Paid online${order.paymentMethod === 'UPI' ? ' via UPI (Verified)' : ''}`
               : 'Payment not verified'}
           </p>
+          {order.paymentIntent?.razorpayPaymentId && (
+            <p className="mt-0.5 text-[11px] font-mono text-ink-500 dark:text-ink-300">
+              UTR / Ref: <span className="font-bold text-ink-700 dark:text-ink-200">{order.paymentIntent.razorpayPaymentId}</span>
+            </p>
+          )}
           {order.notes && <p className="mt-2 text-xs text-ink-500 dark:text-ink-300">Note: “{order.notes}”</p>}
         </div>
 

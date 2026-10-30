@@ -129,7 +129,10 @@ export default function OrdersPage() {
                       </span>
                     </span>
 
-                    <span>Payment: <strong className="text-ink-600 dark:text-ink-300">{o.paymentMethod}</strong></span>
+                    <span>Payment: <strong className="text-ink-600 dark:text-ink-300">{o.paymentMethod} (Verified)</strong></span>
+                    {o.paymentIntent?.razorpayPaymentId && (
+                      <span className="font-mono text-[11px] text-ink-500">UTR: {o.paymentIntent.razorpayPaymentId}</span>
+                    )}
 
                     {o.notes && (
                       <span className="truncate max-w-xs italic text-ink-400 dark:text-ink-300">

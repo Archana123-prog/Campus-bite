@@ -149,10 +149,10 @@ export default function CartDrawer() {
               <section className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-3">
                 <p className="flex items-center gap-2 text-sm font-bold">
                   <CreditCard size={17} className="text-brand-600" />
-                  Secure online payment
+                  UPI Payment & Verification
                 </p>
                 <p className="mt-1 text-xs text-ink-500 dark:text-ink-300">
-                  Pay by UPI, card, or netbanking at checkout. Your order is placed only after payment is verified.
+                  Pay securely via UPI (hayaarav@fam) or QR scan. Your order is placed and confirmed upon verification.
                 </p>
               </section>
 

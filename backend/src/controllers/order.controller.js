@@ -8,6 +8,9 @@ export const ORDER_INCLUDE = {
   orderItems: {
     include: { menuItem: { select: { id: true, name: true, imageUrl: true, prepTimeMins: true, isVeg: true } } },
   },
+  paymentIntent: {
+    select: { id: true, razorpayOrderId: true, razorpayPaymentId: true, amount: true, status: true },
+  },
 };
 
 const ORDER_TYPES = ['DINE_IN', 'HOSTEL_DELIVERY', 'TAKEAWAY'];

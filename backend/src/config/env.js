@@ -1,5 +1,10 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const required = ['DATABASE_URL', 'JWT_SECRET'];
 for (const key of required) {
@@ -25,6 +30,8 @@ export const env = {
     process.env.HOSTEL_BLOCKS,
     'Boys Hostel Block A,Boys Hostel Block B,Girls Hostel Block A,Girls Hostel Block B'
   ),
+  upiId: process.env.UPI_ID || 'hayaarav@fam',
+  upiName: process.env.UPI_NAME || 'Pet Pooja',
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
 };

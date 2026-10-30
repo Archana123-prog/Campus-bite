@@ -9,6 +9,8 @@ export const getConfig = (_req, res) =>
     deliveryFee: env.deliveryFee,
     tableCount: env.tableCount,
     hostelBlocks: env.hostelBlocks,
+    upiId: env.upiId,
+    upiName: env.upiName,
     razorpayKeyId: env.razorpayKeyId || null,
   });
 

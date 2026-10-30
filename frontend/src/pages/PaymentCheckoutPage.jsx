@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Bike,
   Armchair,
@@ -11,8 +12,15 @@ import {
   ArrowLeft,
   ShieldCheck,
   CheckCircle2,
+  Copy,
+  Check,
+  ExternalLink,
+  QrCode,
+  Smartphone,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
-import { useCartStore, selectSubtotal, selectCount, deliveryFeeFor } from '../store/useCartStore';
+import { useCartStore, selectSubtotal, selectCount } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useConfigStore } from '../store/useConfigStore';
 import FoodImage from '../components/ui/FoodImage';
@@ -27,10 +35,10 @@ const MODES = [
 ];
 
 const PENDING_PAYMENT_KEY = 'pet-pooja-pending-payment';
-let razorpaySdkPromise;
 
+let razorpaySdkPromise = null;
 function loadRazorpaySdk() {
-  if (window.Razorpay) return Promise.resolve();
+  if (typeof window !== 'undefined' && window.Razorpay) return Promise.resolve();
   if (razorpaySdkPromise) return razorpaySdkPromise;
 
   razorpaySdkPromise = new Promise((resolve, reject) => {
@@ -41,7 +49,7 @@ function loadRazorpaySdk() {
       if (window.Razorpay) resolve();
       else {
         razorpaySdkPromise = null;
-        reject(new Error('Razorpay checkout loaded without its payment SDK.'));
+        reject(new Error('Razorpay checkout loaded without payment SDK.'));
       }
     };
     script.onerror = () => {
@@ -56,7 +64,12 @@ function loadRazorpaySdk() {
 
 export default function PaymentCheckoutPage() {
   const navigate = useNavigate();
-  const [pendingVerification, setPendingVerification] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [utr, setUtr] = useState('');
+  const [activeQrTab, setActiveQrTab] = useState('dynamic'); // 'dynamic' | 'fampay'
+  const [showGatewayOption, setShowGatewayOption] = useState(false);
+  const [pendingIntent, setPendingIntent] = useState(null);
+
   const cart = useCartStore((s) => s.cart);
   const orderType = useCartStore((s) => s.orderType);
   const tableNumber = useCartStore((s) => s.tableNumber);
@@ -76,10 +89,16 @@ export default function PaymentCheckoutPage() {
   const subtotal = useCartStore(selectSubtotal);
   const count = useCartStore(selectCount);
   const user = useAuthStore((s) => s.user);
-  const { hostelBlocks, deliveryFee, razorpayKeyId } = useConfigStore();
+  const { hostelBlocks, deliveryFee, upiId: configuredUpiId, upiName: configuredUpiName, razorpayKeyId } = useConfigStore();
+
+  const upiId = configuredUpiId || 'hayaarav@fam';
+  const upiName = configuredUpiName || 'Pet Pooja';
 
   const fee = orderType === 'HOSTEL_DELIVERY' ? deliveryFee : 0;
   const grandTotal = subtotal + fee;
+
+  // Build standard UPI intent string
+  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${grandTotal.toFixed(2)}&cu=INR&tn=${encodeURIComponent('PetPooja-Order')}`;
 
   // Prefill default hostel details from user's profile if empty
   useEffect(() => {
@@ -88,68 +107,122 @@ export default function PaymentCheckoutPage() {
     }
   }, [user, hostelBlock, setHostel]);
 
+  // Restore pending payment intent if page was refreshed
   useEffect(() => {
-    const saved = sessionStorage.getItem(PENDING_PAYMENT_KEY);
-    if (!saved) return;
     try {
-      const payment = JSON.parse(saved);
-      if (
-        typeof payment.razorpay_order_id === 'string' &&
-        typeof payment.razorpay_payment_id === 'string' &&
-        typeof payment.razorpay_signature === 'string'
-      ) {
-        setPendingVerification(payment);
-      } else {
-        sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+      const saved = sessionStorage.getItem(PENDING_PAYMENT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.paymentIntentId) {
+          setPendingIntent(parsed);
+        }
       }
-    } catch (loadError) {
-      console.warn('Could not restore the pending payment verification:', loadError);
+    } catch {
       sessionStorage.removeItem(PENDING_PAYMENT_KEY);
     }
   }, []);
 
-  const handleCheckout = async () => {
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(upiId);
+    setCopied(true);
+    toast.success(`UPI ID copied: ${upiId}`);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handlePasteUtr = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const cleaned = text.trim().replace(/\s+/g, '');
+      if (cleaned) {
+        setUtr(cleaned);
+        toast.info('Pasted from clipboard');
+      }
+    } catch {
+      toast.info('Please type or paste your 12-digit UTR manually.');
+    }
+  };
+
+  const validateOrderInputs = () => {
     if (!user) {
       toast.info('Please log in to place your order. Your items are saved.');
       navigate('/login', { state: { from: '/checkout' } });
-      return;
+      return false;
     }
 
     if (orderType === 'DINE_IN' && !tableNumber.trim()) {
       toast.error('Please enter your table number.');
-      return;
+      return false;
     }
 
     if (orderType === 'HOSTEL_DELIVERY' && (!hostelBlock || !roomNumber.trim())) {
       toast.error('Please select your hostel block and enter your room number.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // ─── Primary Method: Direct UPI Payment Verification ───
+  const handleVerifyUpiPayment = async (e) => {
+    e?.preventDefault();
+    if (!validateOrderInputs()) return;
+
+    const cleanedUtr = utr.trim().replace(/\s+/g, '');
+    if (!cleanedUtr) {
+      toast.error('Please enter the 12-digit UPI Reference Number / UTR from your payment app.');
       return;
     }
 
-    await handleRazorpayPayment();
-  };
+    if (cleanedUtr.length < 8 || cleanedUtr.length > 30) {
+      toast.error('Invalid UTR format. Please enter the valid 12-digit reference number from your receipt.');
+      return;
+    }
 
-  const verifyPaidOrder = async (response) => {
     useCartStore.setState({ isPlacing: true, error: null });
+
     try {
-      const verify = await api.post('/payments/verify', {
-        razorpayOrderId: response.razorpay_order_id,
-        razorpayPaymentId: response.razorpay_payment_id,
-        razorpaySignature: response.razorpay_signature,
+      // Step 1: Create or reuse payment intent
+      let intentId = pendingIntent?.paymentIntentId;
+
+      if (!intentId) {
+        const orderRes = await api.post('/payments/create-order', {
+          orderType,
+          tableNumber: orderType === 'DINE_IN' ? tableNumber.trim() : undefined,
+          hostelBlock: orderType === 'HOSTEL_DELIVERY' ? hostelBlock : undefined,
+          roomNumber: orderType === 'HOSTEL_DELIVERY' ? roomNumber.trim() : undefined,
+          notes,
+          items: cart.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
+        });
+        intentId = orderRes.data.paymentIntentId || orderRes.data.razorpayOrderId;
+        const newIntent = { paymentIntentId: intentId, amount: orderRes.data.amount };
+        setPendingIntent(newIntent);
+        sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(newIntent));
+      }
+
+      // Step 2: Verify the payment with the provided 12-digit UTR
+      const verifyRes = await api.post('/payments/verify', {
+        paymentIntentId: intentId,
+        utr: cleanedUtr,
       });
+
       sessionStorage.removeItem(PENDING_PAYMENT_KEY);
-      setPendingVerification(null);
+      setPendingIntent(null);
+      setUtr('');
       useCartStore.setState({ cart: [], notes: '', isPlacing: false, isOpen: false });
-      toast.success(`Order #${verify.data.orderNumber} placed & paid successfully!`);
-      navigate(`/track/${verify.data.id}`);
+
+      toast.success(`Order #${verifyRes.data.orderNumber} placed & payment verified successfully!`);
+      navigate(`/track/${verifyRes.data.id}`);
     } catch (err) {
       useCartStore.setState({ isPlacing: false, error: err.message });
-      toast.error(err.message || 'Payment verification failed. Retry verification before paying again.');
+      toast.error(err.message || 'Payment verification failed. Please check the UTR number and retry.');
     }
   };
 
+  // ─── Optional Fallback: Razorpay Gateway ───
   const handleRazorpayPayment = async () => {
+    if (!validateOrderInputs()) return;
     if (!razorpayKeyId) {
-      toast.error('Online payment is not configured. Please contact the canteen.');
+      toast.error('Online card gateway is not configured. Please use UPI payment above.');
       return;
     }
 
@@ -165,6 +238,7 @@ export default function PaymentCheckoutPage() {
     let rzpOrderData;
     try {
       const res = await api.post('/payments/create-order', {
+        provider: 'razorpay',
         orderType,
         tableNumber: orderType === 'DINE_IN' ? tableNumber.trim() : undefined,
         hostelBlock: orderType === 'HOSTEL_DELIVERY' ? hostelBlock : undefined,
@@ -178,6 +252,7 @@ export default function PaymentCheckoutPage() {
       toast.error(err.message || 'Payment initiation failed.');
       return;
     }
+
     const options = {
       key: rzpOrderData.keyId,
       amount: rzpOrderData.amount,
@@ -185,29 +260,23 @@ export default function PaymentCheckoutPage() {
       name: 'Pet Pooja',
       description: 'Canteen Order Payment',
       order_id: rzpOrderData.razorpayOrderId,
-      config: {
-        display: {
-          blocks: {
-            upi: {
-              name: 'Pay by UPI · QR or UPI app',
-              instruments: [{ method: 'upi', flows: ['qr', 'intent'] }],
-            },
-          },
-          hide: [{ method: 'upi' }],
-          sequence: ['block.upi'],
-          preferences: { show_default_blocks: true },
-        },
-      },
       prefill: { name: user?.fullName || '', contact: user?.phone || '' },
       theme: { color: '#EF4444' },
       handler: async (response) => {
-        setPendingVerification(response);
         try {
-          sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(response));
-        } catch (storageError) {
-          console.warn('Could not save payment verification for retry:', storageError);
+          const verify = await api.post('/payments/verify', {
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+          sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+          useCartStore.setState({ cart: [], notes: '', isPlacing: false, isOpen: false });
+          toast.success(`Order #${verify.data.orderNumber} placed & paid successfully!`);
+          navigate(`/track/${verify.data.id}`);
+        } catch (vErr) {
+          useCartStore.setState({ isPlacing: false, error: vErr.message });
+          toast.error(vErr.message || 'Payment verification failed.');
         }
-        await verifyPaidOrder(response);
       },
       modal: {
         ondismiss: () => useCartStore.setState({ isPlacing: false }),
@@ -216,21 +285,15 @@ export default function PaymentCheckoutPage() {
 
     try {
       const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', ({ error: paymentError }) => {
-        const message = paymentError?.description || 'Payment was not completed. No order was placed.';
-        console.error('Razorpay payment failed:', {
-          code: paymentError?.code,
-          description: paymentError?.description,
-          reason: paymentError?.reason,
-          step: paymentError?.step,
-        });
-        useCartStore.setState({ isPlacing: false, error: message });
-        toast.error(message);
+      rzp.on('payment.failed', ({ error: pErr }) => {
+        const msg = pErr?.description || 'Payment was not completed.';
+        useCartStore.setState({ isPlacing: false, error: msg });
+        toast.error(msg);
       });
       rzp.open();
     } catch (err) {
       useCartStore.setState({ isPlacing: false, error: err.message });
-      toast.error(err.message || 'Could not open secure payment checkout.');
+      toast.error(err.message || 'Could not open payment checkout.');
     }
   };
 
@@ -243,7 +306,7 @@ export default function PaymentCheckoutPage() {
           </div>
           <h1 className="mt-4 font-display text-2xl font-black">Your Cart is Empty</h1>
           <p className="mt-2 text-sm text-ink-500 dark:text-ink-300">
-            Add hot canteen specials to your cart or choose a dish from the menu to proceed with checkout.
+            Add delicious meals to your cart or choose a dish from the menu to proceed with checkout.
           </p>
           <div className="mt-6 flex justify-center">
             <Link to="/menu" className="btn-primary !px-6 !py-3">
@@ -265,8 +328,8 @@ export default function PaymentCheckoutPage() {
         >
           <ArrowLeft size={16} /> Back
         </button>
-        <span className="chip bg-brand-500/15 text-brand-700 dark:text-brand-300">
-          <ShieldCheck size={14} /> Secure Payment & Order
+        <span className="chip bg-leaf-500/15 text-leaf-700 dark:text-leaf-300">
+          <ShieldCheck size={14} /> Direct UPI · Instant Verification
         </span>
       </div>
 
@@ -275,12 +338,12 @@ export default function PaymentCheckoutPage() {
           Order Checkout & Payment
         </h1>
         <p className="mt-1 text-sm text-ink-500 dark:text-ink-300">
-          Review your items, delivery details, and pick your preferred payment method.
+          Pay easily via any UPI app or QR scanner, then confirm your order with your 12-digit UTR.
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.25fr_1fr]">
-        {/* Left column: Delivery options & Order items */}
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_1.1fr]">
+        {/* Left column: Ordered Dishes & Delivery details */}
         <div className="space-y-6">
           {/* Order Items List */}
           <section className="card p-5">
@@ -434,103 +497,264 @@ export default function PaymentCheckoutPage() {
           </section>
         </div>
 
-        {/* Right column: Online payment & Grand Total */}
+        {/* Right column: UPI Payment QR, Direct Mobile Pay, & UTR Verification */}
         <div className="space-y-6">
-          <section className="card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-display text-base font-bold">Online Payment</h2>
-              <span className="text-[11px] font-bold text-brand-600 dark:text-brand-400">
-                Secure checkout
+          {/* Main UPI Payment Card */}
+          <section className="card overflow-hidden p-5 border-2 border-brand-500/40">
+            <div className="flex items-center justify-between border-b border-ink-100 pb-3 dark:border-ink-800">
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-500 text-ink-950">
+                  <QrCode size={18} />
+                </span>
+                <div>
+                  <h2 className="font-display text-base font-bold">UPI Payment & Verification</h2>
+                  <p className="text-[11px] text-ink-400 dark:text-ink-300">Scan QR or tap to open UPI App</p>
+                </div>
+              </div>
+              <span className="chip bg-leaf-500/15 text-leaf-700 dark:text-leaf-300 text-[11px]">
+                <CheckCircle2 size={13} /> Active
               </span>
             </div>
-            <div className="flex items-start gap-3 rounded-xl border-2 border-brand-500 bg-brand-50/60 p-3 dark:bg-brand-500/10">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-500 text-ink-950">
-                <CreditCard size={20} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 text-sm font-bold">
-                  UPI QR / app, cards, or netbanking
-                  <CheckCircle2 size={16} className="shrink-0 text-brand-600" />
+
+            {/* Merchant UPI ID bar */}
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-ink-100/70 p-3 dark:bg-ink-800/80">
+              <div className="min-w-0 pr-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-300">
+                  Merchant UPI ID (FamPay)
                 </p>
-                <p className="mt-1 text-xs font-semibold text-ink-700 dark:text-ink-200">
-                  Merchant UPI ID: hayaarav@fam
+                <p className="font-mono text-sm font-extrabold text-ink-900 dark:text-white truncate">
+                  {upiId}
                 </p>
-                <p className="mt-1 text-xs text-ink-500 dark:text-ink-300">
-                  Pay only using the unique QR or UPI app option shown in Razorpay Checkout. Razorpay verifies each payment before the kitchen receives the order; sending money directly to the UPI ID will not place an order.
-                </p>
-                {!razorpayKeyId && (
-                  <p role="alert" className="mt-2 text-xs font-semibold text-chili-600 dark:text-red-300">
-                    Online payment is not configured. Please contact the canteen; orders cannot be placed right now.
-                  </p>
-                )}
               </div>
+              <button
+                type="button"
+                onClick={handleCopyUpi}
+                className="btn-ghost !px-3 !py-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 shrink-0 flex items-center gap-1"
+              >
+                {copied ? (
+                  <>
+                    <Check size={14} className="text-leaf-600" /> Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} /> Copy ID
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* QR Code Tab Selector */}
+            <div className="mt-4 flex rounded-lg bg-ink-100 p-1 dark:bg-ink-800">
+              <button
+                type="button"
+                onClick={() => setActiveQrTab('dynamic')}
+                className={`flex-1 rounded-md py-1.5 text-xs font-bold transition ${
+                  activeQrTab === 'dynamic'
+                    ? 'bg-white shadow-sm text-ink-950 dark:bg-ink-700 dark:text-white'
+                    : 'text-ink-500 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white'
+                }`}
+              >
+                Auto-Amount QR ({rupees(grandTotal)})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveQrTab('fampay')}
+                className={`flex-1 rounded-md py-1.5 text-xs font-bold transition ${
+                  activeQrTab === 'fampay'
+                    ? 'bg-white shadow-sm text-ink-950 dark:bg-ink-700 dark:text-white'
+                    : 'text-ink-500 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white'
+                }`}
+              >
+                Official FamPay QR
+              </button>
+            </div>
+
+            {/* QR Code Display Box */}
+            <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-ink-100 bg-white p-5 shadow-inner dark:border-ink-800 dark:bg-ink-950">
+              {activeQrTab === 'dynamic' ? (
+                <div className="flex flex-col items-center">
+                  <div className="rounded-xl border border-ink-200 bg-white p-3.5 shadow-sm">
+                    <QRCodeSVG
+                      value={upiIntentUrl}
+                      size={190}
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+                  <p className="mt-3 text-center text-xs font-extrabold text-ink-900 dark:text-white">
+                    Scan with GPay, PhonePe, FamPay or Paytm
+                  </p>
+                  <p className="text-center text-[11px] text-ink-400 dark:text-ink-300">
+                    Amount is pre-filled: <span className="font-bold text-brand-600 dark:text-brand-400">{rupees(grandTotal)}</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-sm">
+                    <img
+                      src="/upi-qr.png"
+                      alt="FamPay UPI QR Code"
+                      className="h-48 w-48 rounded-lg object-contain"
+                    />
+                  </div>
+                  <p className="mt-3 text-center text-xs font-extrabold text-ink-900 dark:text-white">
+                    Official FamPay Merchant QR
+                  </p>
+                  <p className="text-center text-[11px] text-ink-400 dark:text-ink-300">
+                    Recipient: <span className="font-mono font-bold">{upiId}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile One-Tap Pay Button */}
+            <div className="mt-4">
+              <a
+                href={upiIntentUrl}
+                className="btn-primary flex items-center justify-center gap-2 w-full !py-3 text-sm font-black shadow-md shadow-brand-500/20 active:scale-95"
+              >
+                <Smartphone size={16} />
+                Pay via UPI App · {rupees(grandTotal)}
+                <ExternalLink size={14} />
+              </a>
+              <p className="mt-1.5 text-center text-[11px] text-ink-400 dark:text-ink-300">
+                Tap to open installed UPI app on your phone (GPay, PhonePe, FamPay, etc.)
+              </p>
             </div>
           </section>
 
-          {/* Order Summary & Pay Button */}
-          <section className="card p-5">
-            <h2 className="font-display text-base font-bold mb-3 border-b border-ink-100 pb-2 dark:border-ink-800">
-              Payment Summary
+          {/* Payment Verification Form */}
+          <section className="card p-5 border border-brand-500/30">
+            <h2 className="font-display text-base font-bold flex items-center gap-2 mb-3">
+              <ShieldCheck size={18} className="text-leaf-600" />
+              Verify & Confirm Order
             </h2>
 
+            {/* 3 Step Instruction Guide */}
+            <div className="mb-4 rounded-xl bg-ink-50 p-3 text-xs text-ink-600 dark:bg-ink-900/60 dark:text-ink-300 space-y-1.5">
+              <p className="font-bold text-ink-900 dark:text-white">How verification works:</p>
+              <div className="flex items-start gap-2">
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] font-black text-ink-950">1</span>
+                <span>Complete the payment of <strong>{rupees(grandTotal)}</strong> to <strong>{upiId}</strong>.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] font-black text-ink-950">2</span>
+                <span>Copy the <strong>12-digit UPI Reference Number / UTR</strong> from your receipt screen.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] font-black text-ink-950">3</span>
+                <span>Paste the UTR number below and click <strong>Verify Payment & Place Order</strong>.</span>
+              </div>
+            </div>
+
             {error && (
-              <p role="alert" className="mb-3 rounded-lg bg-chili-500/10 px-3 py-2 text-xs font-semibold text-chili-600 dark:text-red-300">
+              <p role="alert" className="mb-3 rounded-lg bg-chili-500/10 px-3 py-2 text-xs font-semibold text-chili-600 dark:text-red-300 flex items-center gap-1.5">
+                <AlertCircle size={15} className="shrink-0" />
                 {error}
               </p>
             )}
 
-            {pendingVerification && (
-              <div role="alert" className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
-                <p className="text-sm font-bold text-amber-800 dark:text-amber-200">
-                  Payment submitted; order confirmation is pending.
+            <form onSubmit={handleVerifyUpiPayment} className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="label !mb-1" htmlFor="checkout-utr">
+                    12-Digit UPI Reference No. (UTR)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePasteUtr}
+                    className="text-[11px] font-bold text-brand-600 hover:underline dark:text-brand-400"
+                  >
+                    Paste from clipboard
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    id="checkout-utr"
+                    type="text"
+                    required
+                    maxLength={30}
+                    placeholder="e.g. 430291827465"
+                    value={utr}
+                    onChange={(e) => setUtr(e.target.value.replace(/\s+/g, ''))}
+                    className="input font-mono tracking-wider font-bold text-base !py-3 uppercase"
+                  />
+                  {utr.trim().length >= 8 && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-leaf-600 dark:text-leaf-400">
+                      <CheckCircle2 size={18} />
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] text-ink-400 dark:text-ink-300">
+                  Found on your payment success receipt as "UPI Ref No.", "UTR", or "Transaction ID".
                 </p>
-                <p className="mt-1 text-xs text-ink-600 dark:text-ink-300">
-                  Do not pay again. Retry the secure verification to confirm your order.
-                </p>
+              </div>
+
+              {/* Price Breakdown */}
+              <dl className="space-y-2 border-t border-ink-100 pt-3 text-sm dark:border-ink-800">
+                <div className="flex justify-between text-ink-600 dark:text-ink-300">
+                  <dt>Items Subtotal ({count})</dt>
+                  <dd className="font-semibold">{rupees(subtotal)}</dd>
+                </div>
+                <div className="flex justify-between text-ink-600 dark:text-ink-300">
+                  <dt>Delivery Fee</dt>
+                  <dd className="font-semibold">{fee > 0 ? rupees(fee) : 'FREE'}</dd>
+                </div>
+                <div className="flex justify-between border-t border-ink-100 pt-2 text-lg font-black dark:border-ink-800">
+                  <dt>Total Amount</dt>
+                  <dd className="text-brand-600 dark:text-brand-400">{rupees(grandTotal)}</dd>
+                </div>
+              </dl>
+
+              {/* Submit Verification Button */}
+              <button
+                type="submit"
+                disabled={isPlacing || !user}
+                className="btn-primary w-full !py-4 text-base font-black shadow-lg shadow-brand-500/25 active:scale-95"
+              >
+                {isPlacing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Clock size={18} className="animate-spin" /> Verifying payment with canteen…
+                  </span>
+                ) : user ? (
+                  `Verify Payment & Place Order · ${rupees(grandTotal)}`
+                ) : (
+                  'Log in to pay'
+                )}
+              </button>
+            </form>
+
+            {/* Optional Card Gateway Accordion */}
+            {razorpayKeyId && (
+              <div className="mt-4 border-t border-ink-100 pt-3 dark:border-ink-800">
                 <button
                   type="button"
-                  onClick={() => verifyPaidOrder(pendingVerification)}
-                  disabled={isPlacing}
-                  className="btn-primary mt-3 w-full"
+                  onClick={() => setShowGatewayOption(!showGatewayOption)}
+                  className="flex items-center justify-between w-full text-xs font-bold text-ink-500 hover:text-ink-900 dark:text-ink-300 dark:hover:text-white"
                 >
-                  {isPlacing ? 'Verifying payment…' : 'Retry payment verification'}
+                  <span className="flex items-center gap-1.5">
+                    <CreditCard size={14} /> Prefer Debit / Credit Card or NetBanking?
+                  </span>
+                  <span>{showGatewayOption ? '▲ Hide' : '▼ Show'}</span>
                 </button>
+
+                {showGatewayOption && (
+                  <div className="mt-3 rounded-xl border border-ink-200 bg-ink-50/50 p-3 dark:border-ink-700 dark:bg-ink-900/40">
+                    <p className="text-xs text-ink-500 dark:text-ink-300 mb-2">
+                      You can also complete your payment through the card / netbanking gateway.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRazorpayPayment}
+                      disabled={isPlacing}
+                      className="btn-ghost w-full border border-ink-300 text-xs font-bold dark:border-ink-700"
+                    >
+                      Open Card / NetBanking Checkout
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between text-ink-600 dark:text-ink-300">
-                <dt>Items Subtotal ({count})</dt>
-                <dd className="font-semibold">{rupees(subtotal)}</dd>
-              </div>
-              <div className="flex justify-between text-ink-600 dark:text-ink-300">
-                <dt>Delivery Fee</dt>
-                <dd className="font-semibold">{fee > 0 ? rupees(fee) : 'FREE'}</dd>
-              </div>
-              <div className="flex justify-between border-t border-ink-100 pt-3 text-lg font-black dark:border-ink-800">
-                <dt>Total Amount</dt>
-                <dd className="text-brand-600 dark:text-brand-400">{rupees(grandTotal)}</dd>
-              </div>
-            </dl>
-
-            <button
-              onClick={handleCheckout}
-              disabled={isPlacing || Boolean(pendingVerification) || !razorpayKeyId}
-              className="btn-primary mt-5 w-full !py-4 text-base font-black shadow-lg shadow-brand-500/25 active:scale-95"
-            >
-              {pendingVerification
-                ? 'Payment submitted · retry verification above'
-                : isPlacing
-                ? 'Verifying payment…'
-                : user
-                  ? `Pay securely · ${rupees(grandTotal)}`
-                  : 'Log in to pay'}
-            </button>
-
-            <p className="mt-3 text-center text-[11px] text-ink-400 dark:text-ink-300 flex items-center justify-center gap-1">
-              <ShieldCheck size={13} className="text-leaf-600" />
-              Order confirmation follows successful payment verification
-            </p>
           </section>
         </div>
       </div>

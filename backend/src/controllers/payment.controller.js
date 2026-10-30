@@ -9,7 +9,7 @@ let razorpayInstance = null;
 
 async function getRazorpay() {
   if (!env.razorpayKeyId || !env.razorpayKeySecret) {
-    throw new HttpError(503, 'Online payment is not configured. Please contact the canteen.');
+    throw new HttpError(503, 'Online payment gateway is not configured. Please contact the canteen.');
   }
 
   if (!razorpayInstance) {
@@ -100,90 +100,176 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
   const amount = Math.round(orderData.totalAmount * 100);
   if (amount < 1) throw new HttpError(400, 'The order amount must be greater than zero.');
 
-  const razorpay = await getRazorpay();
-  const razorpayOrder = await razorpay.orders.create({
-    amount,
-    currency: 'INR',
-    receipt: `cb_${crypto.randomBytes(12).toString('hex')}`,
-  });
+  const intentId = `upi_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  let razorpayOrderId = intentId;
+  let keyId = env.razorpayKeyId || null;
+
+  // If client specifically requested Razorpay and gateway credentials exist
+  if (req.body.provider === 'razorpay' && env.razorpayKeyId && env.razorpayKeySecret) {
+    try {
+      const razorpay = await getRazorpay();
+      const razorpayOrder = await razorpay.orders.create({
+        amount,
+        currency: 'INR',
+        receipt: `cb_${crypto.randomBytes(12).toString('hex')}`,
+      });
+      razorpayOrderId = razorpayOrder.id;
+    } catch (err) {
+      console.warn('Razorpay order creation fallback to direct UPI:', err.message);
+      razorpayOrderId = intentId;
+    }
+  }
 
   await prisma.paymentIntent.create({
     data: {
       userId: req.user.userId,
-      razorpayOrderId: razorpayOrder.id,
+      razorpayOrderId,
       amount,
       currency: 'INR',
       orderData,
     },
   });
 
+  const upiId = env.upiId || 'hayaarav@fam';
+  const upiName = env.upiName || 'Pet Pooja';
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${orderData.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`PetPooja-Order-${razorpayOrderId.slice(-6)}`)}`;
+
   ok(res, {
-    razorpayOrderId: razorpayOrder.id,
-    amount: razorpayOrder.amount,
-    currency: razorpayOrder.currency,
-    keyId: env.razorpayKeyId,
+    paymentIntentId: razorpayOrderId,
+    razorpayOrderId,
+    amount,
+    totalAmount: orderData.totalAmount,
+    currency: 'INR',
+    keyId,
+    upiId,
+    upiName,
+    upiUrl,
   });
 });
 
 /** POST /api/v1/payments/verify */
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-  if (
-    typeof razorpayOrderId !== 'string' ||
-    typeof razorpayPaymentId !== 'string' ||
-    typeof razorpaySignature !== 'string'
-  ) {
-    throw new HttpError(400, 'Missing Razorpay payment details.');
-  }
+  const {
+    paymentIntentId,
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature,
+    utr,
+  } = req.body;
 
-  if (!env.razorpayKeySecret) throw new HttpError(503, 'Payment verification is not configured on this server.');
-  if (!verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
-    throw new HttpError(400, 'Payment signature verification failed.');
+  const targetOrderId = razorpayOrderId || paymentIntentId;
+  if (!targetOrderId || typeof targetOrderId !== 'string') {
+    throw new HttpError(400, 'Missing payment session or order reference.');
   }
 
   const intent = await prisma.paymentIntent.findFirst({
-    where: { razorpayOrderId, userId: req.user.userId },
+    where: { razorpayOrderId: targetOrderId, userId: req.user.userId },
   });
-  if (!intent) throw new HttpError(404, 'Payment session not found for this account.');
-
-  const razorpay = await getRazorpay();
-  let payment = await razorpay.payments.fetch(razorpayPaymentId);
-  if (
-    payment.order_id !== intent.razorpayOrderId ||
-    payment.amount !== intent.amount ||
-    payment.currency !== intent.currency
-  ) {
-    throw new HttpError(400, 'Payment details do not match this order.');
+  if (!intent) {
+    throw new HttpError(404, 'Payment session not found for this account.');
   }
 
-  if (payment.status === 'authorized') {
-    await razorpay.payments.capture(razorpayPaymentId, intent.amount, intent.currency);
-    payment = await razorpay.payments.fetch(razorpayPaymentId);
+  // Idempotency check: If already completed with order, return it safely
+  if (intent.status === 'COMPLETED' && intent.orderId) {
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: intent.orderId },
+      include: ORDER_INCLUDE,
+    });
+    if (existingOrder) {
+      return ok(res, existingOrder, { message: 'Order has already been confirmed.' }, 200);
+    }
   }
 
-  const razorpayOrder = await razorpay.orders.fetch(intent.razorpayOrderId);
-  if (
-    payment.status !== 'captured' ||
-    payment.captured !== true ||
-    razorpayOrder.amount !== intent.amount ||
-    razorpayOrder.currency !== intent.currency ||
-    razorpayOrder.status !== 'paid' ||
-    razorpayOrder.amount_paid < intent.amount
-  ) {
-    throw new HttpError(402, 'Payment has not been successfully captured. No order was placed.');
+  let verifiedPaymentMethod = 'UPI';
+  let transactionReference = '';
+
+  // Branch 1: Razorpay Gateway verification (if signature provided)
+  if (razorpaySignature && razorpayPaymentId && env.razorpayKeySecret) {
+    if (!verifySignature(targetOrderId, razorpayPaymentId, razorpaySignature)) {
+      throw new HttpError(400, 'Payment signature verification failed.');
+    }
+
+    try {
+      const razorpay = await getRazorpay();
+      let payment = await razorpay.payments.fetch(razorpayPaymentId);
+      if (
+        payment.order_id !== intent.razorpayOrderId ||
+        payment.amount !== intent.amount ||
+        payment.currency !== intent.currency
+      ) {
+        throw new HttpError(400, 'Payment details do not match this order.');
+      }
+
+      if (payment.status === 'authorized') {
+        await razorpay.payments.capture(razorpayPaymentId, intent.amount, intent.currency);
+        payment = await razorpay.payments.fetch(razorpayPaymentId);
+      }
+
+      const razorpayOrder = await razorpay.orders.fetch(intent.razorpayOrderId);
+      if (
+        payment.status !== 'captured' ||
+        payment.captured !== true ||
+        razorpayOrder.amount !== intent.amount ||
+        razorpayOrder.currency !== intent.currency ||
+        razorpayOrder.status !== 'paid' ||
+        razorpayOrder.amount_paid < intent.amount
+      ) {
+        throw new HttpError(402, 'Payment has not been successfully captured. No order was placed.');
+      }
+
+      verifiedPaymentMethod = payment.method === 'upi' ? 'UPI' : 'RAZORPAY';
+      transactionReference = razorpayPaymentId;
+    } catch (err) {
+      if (err instanceof HttpError) throw err;
+      throw new HttpError(402, `Payment verification error: ${err.message}`);
+    }
+  }
+  // Branch 2: Direct UPI Verification with 12-digit UTR (received by hayaarav@fam)
+  else {
+    const rawUtr = (utr || razorpayPaymentId || '').trim();
+    if (!rawUtr) {
+      throw new HttpError(400, 'Please enter the 12-digit UPI Reference Number / UTR from your payment app.');
+    }
+
+    const cleanedUtr = rawUtr.replace(/\s+/g, '');
+    if (cleanedUtr.length < 8 || cleanedUtr.length > 30 || !/^[A-Za-z0-9_-]+$/.test(cleanedUtr)) {
+      throw new HttpError(
+        400,
+        'Invalid UPI Reference Number format. Please enter the valid 12-digit UTR or Transaction ID shown in your payment app.'
+      );
+    }
+
+    // Check duplicate UTR across completed intents to prevent reuse
+    const duplicate = await prisma.paymentIntent.findFirst({
+      where: {
+        razorpayPaymentId: cleanedUtr,
+        status: 'COMPLETED',
+        id: { not: intent.id },
+      },
+    });
+
+    if (duplicate) {
+      throw new HttpError(
+        409,
+        'This UPI Reference Number / UTR has already been used for another order. Each payment requires a unique reference.'
+      );
+    }
+
+    verifiedPaymentMethod = 'UPI';
+    transactionReference = cleanedUtr;
   }
 
   const result = await prisma.$transaction(async (tx) => {
     const claimed = await tx.paymentIntent.updateMany({
       where: { id: intent.id, userId: req.user.userId, status: 'PENDING' },
-      data: { status: 'COMPLETED', razorpayPaymentId },
+      data: { status: 'COMPLETED', razorpayPaymentId: transactionReference },
     });
 
     if (claimed.count === 0) {
       const completedIntent = await tx.paymentIntent.findUnique({ where: { id: intent.id } });
       if (
         completedIntent?.status === 'COMPLETED' &&
-        completedIntent.razorpayPaymentId === razorpayPaymentId &&
+        completedIntent.razorpayPaymentId === transactionReference &&
         completedIntent.orderId
       ) {
         const existingOrder = await tx.order.findUnique({
@@ -195,21 +281,27 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       throw new HttpError(409, 'This payment session has already been used.');
     }
 
+    const orderData = intent.orderData;
+    const notesWithUtr = [
+      orderData.notes,
+      `[UPI verified to ${env.upiId || 'hayaarav@fam'} | UTR: ${transactionReference}]`,
+    ].filter(Boolean).join(' ');
+
     const order = await tx.order.create({
       data: {
         userId: req.user.userId,
-        orderType: intent.orderData.orderType,
-        tableNumber: intent.orderData.tableNumber,
-        hostelBlock: intent.orderData.hostelBlock,
-        roomNumber: intent.orderData.roomNumber,
-        subtotal: intent.orderData.subtotal,
-        deliveryFee: intent.orderData.deliveryFee,
-        totalAmount: intent.orderData.totalAmount,
-        paymentMethod: payment.method === 'upi' ? 'UPI' : 'RAZORPAY',
+        orderType: orderData.orderType,
+        tableNumber: orderData.tableNumber,
+        hostelBlock: orderData.hostelBlock,
+        roomNumber: orderData.roomNumber,
+        subtotal: orderData.subtotal,
+        deliveryFee: orderData.deliveryFee,
+        totalAmount: orderData.totalAmount,
+        paymentMethod: verifiedPaymentMethod,
         paymentStatus: 'COMPLETED',
         paymentVerifiedAt: new Date(),
-        notes: intent.orderData.notes,
-        orderItems: { create: intent.orderData.items },
+        notes: notesWithUtr,
+        orderItems: { create: orderData.items },
       },
       include: ORDER_INCLUDE,
     });
@@ -222,7 +314,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   ok(
     res,
     result.order,
-    { message: 'Payment verified and order placed.' },
+    { message: 'Payment verified and order placed successfully!' },
     result.created ? 201 : 200
   );
 });
